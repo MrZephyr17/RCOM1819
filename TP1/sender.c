@@ -6,6 +6,7 @@
 #include "helpers.h"
 
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
+volatile int STOP = FALSE;
 
 void readStdin(char *buf) {
   printf("Write something here...\n");
@@ -20,10 +21,11 @@ int main(int argc, char **argv) {
   int fdWrite = 0, fdRead = 0;
   struct termios oldtio;
   char buf[255];
+  char buf2[255];
 
   usage(argc, argv);
 
-  setUpSender(argv, fdWrite, &oldtio);
+  setUpSender(argv, &fdWrite, &oldtio);
 
   readStdin(buf);
 
@@ -31,9 +33,9 @@ int main(int argc, char **argv) {
 
   closeFd(fdWrite, &oldtio);
 
-  setUpReceiver(argv, fdRead, &oldtio);
+  setUpReceiver(argv, &fdRead, &oldtio);
 
-  readSentence(fdRead, buf);
+  readSentence(&STOP, fdRead, buf2);
 
   closeFd(fdRead, &oldtio);
 

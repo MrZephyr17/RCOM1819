@@ -2,12 +2,14 @@
 
 #include <termios.h>
 
+#define FALSE 0
+#define TRUE 1
 
-void setUpReceiver(char* argv[], int fdRead, struct termios *oldtio);
+void setUpReceiver(char* argv[], int *fdRead, struct termios *oldtio);
 
-void setUpSender(char* argv[], int fdWrite, struct termios *oldtio);
+void setUpSender(char* argv[], int *fdWrite, struct termios *oldtio);
 
-void readSentence(int fdRead, char* buf);
+void readSentence(volatile int *STOP, int fdRead, char* buf);
 
 void usage(int argc, char* argv[]);
 

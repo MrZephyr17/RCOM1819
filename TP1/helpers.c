@@ -8,21 +8,17 @@
 #include "helpers.h"
 
 #define BAUDRATE B38400
-#define FALSE 0
-#define TRUE 1
 
-volatile int STOP = FALSE;
-
-void setUpReceiver(char *argv[], int fdRead, struct termios *oldtio) {
+void setUpReceiver(char *argv[], int *fdRead, struct termios *oldtio) {
   struct termios newtio;
 
-  fdRead = open(argv[1], O_RDWR | O_NOCTTY);
-  if (fdRead < 0) {
+  *fdRead = open(argv[1], O_RDWR | O_NOCTTY);
+  if (*fdRead < 0) {
     perror(argv[1]);
     exit(-1);
   }
 
-  if (tcgetattr(fdRead, oldtio) == -1) { /* save current port settings */
+  if (tcgetattr(*fdRead, oldtio) == -1) { /* save current port settings */
     perror("tcgetattr");
     exit(-1);
   }
@@ -43,9 +39,9 @@ void setUpReceiver(char *argv[], int fdRead, struct termios *oldtio) {
   leitura do(s) pr�ximo(s) caracter(es)
   */
 
-  tcflush(fdRead, TCIOFLUSH);
+  tcflush(*fdRead, TCIOFLUSH);
 
-  if (tcsetattr(fdRead, TCSANOW, &newtio) == -1) {
+  if (tcsetattr(*fdRead, TCSANOW, &newtio) == -1) {
     perror("tcsetattr");
     exit(-1);
   }
@@ -53,17 +49,17 @@ void setUpReceiver(char *argv[], int fdRead, struct termios *oldtio) {
   printf("New termios structure set\n");
 }
 
-void setUpSender(char *argv[], int fdWrite, struct termios *oldtio) {
+void setUpSender(char *argv[], int *fdWrite, struct termios *oldtio) {
 
   struct termios newtio;
 
-  fdWrite = open(argv[1], O_RDWR | O_NOCTTY);
-  if (fdWrite < 0) {
+  *fdWrite = open(argv[1], O_RDWR | O_NOCTTY);
+  if (*fdWrite < 0) {
     perror(argv[1]);
     exit(-1);
   }
 
-  if (tcgetattr(fdWrite, oldtio) == -1) { /* save current port settings */
+  if (tcgetattr(*fdWrite, oldtio) == -1) { /* save current port settings */
     perror("tcgetattr");
     exit(-1);
   }
@@ -79,9 +75,9 @@ void setUpSender(char *argv[], int fdWrite, struct termios *oldtio) {
   newtio.c_cc[VTIME] = 1; /* inter-character timer unused */
   newtio.c_cc[VMIN] = 0;  /* blocking read until 5 chars received */
 
-  tcflush(fdWrite, TCIOFLUSH);
+  tcflush(*fdWrite, TCIOFLUSH);
 
-  if (tcsetattr(fdWrite, TCSANOW, &newtio) == -1) {
+  if (tcsetattr(*fdWrite, TCSANOW, &newtio) == -1) {
     perror("tcsetattr");
     exit(-1);
   }
@@ -89,15 +85,15 @@ void setUpSender(char *argv[], int fdWrite, struct termios *oldtio) {
   printf("New termios structure set\n");
 }
 
-void readSentence(int fdRead, char *buf) {
+void readSentence(volatile int *STOP, int fdRead, char *buf) {
   int i = 0;
   int res;
 
-  while (STOP == FALSE) {           /* loop for input */
+  while (*STOP == FALSE) {           /* loop for input */
     res = read(fdRead, buf + i, 1); /* returns after 5 chars have been input */
     if (res > 0) {
       if (buf[i] == '\0')
-        STOP = TRUE;
+        *STOP = TRUE;
 
       i++;
     }
