@@ -9,19 +9,30 @@
 #define MAX_BUF_SIZE 255
 #define FLAG 0x7E
 #define A 0x03
-#define C 0x03
-#define SET_BCC A ^ C
+#define SET_C 0x03
+#define UA_C 0x07
+#define SUPERVISION_SIZE 5
 
-enum set_state_t {START, FLAG_RCV, A_RCV, C_RCV, BCC_OK, STOP};
+enum state_t
+{
+    START,
+    FLAG_RCV,
+    A_RCV,
+    C_RCV,
+    BCC_OK,
+    STOP
+};
 
-void setUpReceiver(char* argv[], int *fdRead, struct termios *oldtio);
+int receiveSupervisionByte(int fdRead, unsigned char C);
 
-void setUpSender(char* argv[], int *fdWrite, struct termios *oldtio);
+void setUpReceiver(char *argv[], int *fdRead, struct termios *oldtio);
 
-void readSentence(volatile int *STOP, int fdRead, char* buf);
+void setUpSender(char *argv[], int *fdWrite, struct termios *oldtio);
 
-void usage(int argc, char* argv[]);
+void readSentence(volatile int *STOP, int fdRead, char *buf);
 
-void writeSentence(int fdWrite, char* buf);
+void usage(int argc, char *argv[]);
+
+void writeSentence(int fdWrite, char *buf);
 
 void closeFd(int fd, struct termios *oldtio);

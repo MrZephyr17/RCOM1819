@@ -11,7 +11,6 @@
 
 int llopen(int port, int flag)
 {
-
   switch (flag)
   {
   case RECEIVER:
@@ -36,9 +35,16 @@ int llopen_receiver(int port)
   return 0;
 }
 
-int receiveSET(int fdRead)
+int sendSupervisionByte(int fdWrite, unsigned char C)
 {
-  enum set_state_t state = START;
+  unsigned char message[SUPERVISION_SIZE] = {FLAG, A, C, A ^ C, FLAG};
+
+  return write(fdWrite, message, SUPERVISION_SIZE) > 0;
+}
+
+int receiveSupervisionByte(int fdRead, unsigned char C)
+{
+  enum state_t state = START;
   int res = 0;
   unsigned char buf;
 
@@ -67,7 +73,7 @@ int receiveSET(int fdRead)
         state = START;
       break;
     case C_RCV:
-      if (res > 0 && buf == BCC_OK)
+      if (res > 0 && buf == A ^ C)
         state = BCC_OK;
       else if (res > 0 && buf == FLAG)
         state = FLAG_RCV;
@@ -79,7 +85,7 @@ int receiveSET(int fdRead)
         state = STOP;
       else if (res > 0)
         state = START;
-      break;  
+      break;
     default:
       fprintf(stderr, "Invalid set state\n");
       return -1;
