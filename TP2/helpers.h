@@ -6,12 +6,16 @@
 #define TRUE 1
 #define TRANSMITTER 0
 #define RECEIVER 1
+#define BAUDRATE B38400
 #define MAX_BUF_SIZE 255
 #define FLAG 0x7E
 #define A 0x03
 #define SET_C 0x03
 #define UA_C 0x07
 #define SUPERVISION_SIZE 5
+#define TIME_OUT 3
+#define MAX_RETRY_NUMBER 3
+#define PORT_SIZE 11
 
 enum state_t
 {
@@ -20,19 +24,19 @@ enum state_t
     A_RCV,
     C_RCV,
     BCC_OK,
-    STOP
+    END
 };
 
-int receiveSupervisionByte(int fdRead, unsigned char C);
+int receiveSupervisionByte(int fd, unsigned char C);
 
-void setUpReceiver(char *argv[], int *fdRead, struct termios *oldtio);
+int sendSupervisionByte(int fd, unsigned char C);
 
-void setUpSender(char *argv[], int *fdWrite, struct termios *oldtio);
+void setUpPort(char *port, int *fd, struct termios *oldtio);
 
-void readSentence(volatile int *STOP, int fdRead, char *buf);
+void readSentence(volatile int *STOP, int fd, char *buf);
 
 void usage(int argc, char *argv[]);
 
-void writeSentence(int fdWrite, char *buf);
+void writeSentence(int fd, char *buf);
 
 void closeFd(int fd, struct termios *oldtio);
