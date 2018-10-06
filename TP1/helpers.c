@@ -9,16 +9,16 @@
 
 #define BAUDRATE B38400
 
-void setUpReceiver(char *argv[], int *fdRead, struct termios *oldtio) {
+void setUpPort(char *argv[], int *fd, struct termios *oldtio) {
   struct termios newtio;
 
-  *fdRead = open(argv[1], O_RDWR | O_NOCTTY);
-  if (*fdRead < 0) {
+  *fd = open(argv[1], O_RDWR | O_NOCTTY);
+  if (*fd < 0) {
     perror(argv[1]);
     exit(-1);
   }
 
-  if (tcgetattr(*fdRead, oldtio) == -1) { /* save current port settings */
+  if (tcgetattr(*fd, oldtio) == -1) { /* save current port settings */
     perror("tcgetattr");
     exit(-1);
   }
@@ -39,48 +39,14 @@ void setUpReceiver(char *argv[], int *fdRead, struct termios *oldtio) {
   leitura do(s) pr�ximo(s) caracter(es)
   */
 
-  tcflush(*fdRead, TCIOFLUSH);
+  tcflush(*fd, TCIOFLUSH);
 
-  if (tcsetattr(*fdRead, TCSANOW, &newtio) == -1) {
+  if (tcsetattr(*fd, TCSANOW, &newtio) == -1) {
     perror("tcsetattr");
     exit(-1);
   }
 
-  printf("New termios structure set\n");
-}
-
-void setUpSender(char *argv[], int *fdWrite, struct termios *oldtio) {
-
-  struct termios newtio;
-
-  *fdWrite = open(argv[1], O_RDWR | O_NOCTTY);
-  if (*fdWrite < 0) {
-    perror(argv[1]);
-    exit(-1);
-  }
-
-  if (tcgetattr(*fdWrite, oldtio) == -1) { /* save current port settings */
-    perror("tcgetattr");
-    exit(-1);
-  }
-
-  bzero(&newtio, sizeof(newtio));
-  newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-  newtio.c_iflag = IGNPAR;
-  newtio.c_oflag = 0;
-
-  /* set input mode (non-canonical, no echo,...) */
-  newtio.c_lflag = 0;
-
-  newtio.c_cc[VTIME] = 1; /* inter-character timer unused */
-  newtio.c_cc[VMIN] = 0;  /* blocking read until 5 chars received */
-
-  tcflush(*fdWrite, TCIOFLUSH);
-
-  if (tcsetattr(*fdWrite, TCSANOW, &newtio) == -1) {
-    perror("tcsetattr");
-    exit(-1);
-  }
+  sleep(1);
 
   printf("New termios structure set\n");
 }
@@ -113,6 +79,7 @@ void writeSentence(int fdWrite, char *buf) {
   int res;
 
   res = write(fdWrite, buf, strlen(buf) + 1);
+  tcflush(fdWrite, TCIOFLUSH);
   printf("%d bytes written\n", res);
 }
 

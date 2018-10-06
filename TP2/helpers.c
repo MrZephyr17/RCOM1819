@@ -73,8 +73,11 @@ int llopen_transmitter(int port)
 
   free(portPath);
 
-  if (alarmCounter == MAX_RETRY_NUMBER)
+  if (alarmFlag && alarmCounter == MAX_RETRY_NUMBER)
     return -1;
+
+  alarmFlag = FALSE;
+  alarmCounter = 0;
 
   return 0;
 }
@@ -196,6 +199,8 @@ void setUpPort(char *port, int *fd, struct termios *oldtio)
     exit(-1);
   }
 
+  sleep(1);
+
   printf("New termios structure set\n");
 }
 
@@ -233,6 +238,7 @@ void writeSentence(int fd, char *buf)
   int res;
 
   res = write(fd, buf, strlen(buf) + 1);
+  tcflush(fd, TCIOFLUSH);
   printf("%d bytes written\n", res);
 }
 

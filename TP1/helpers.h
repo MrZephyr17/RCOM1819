@@ -5,9 +5,7 @@
 #define FALSE 0
 #define TRUE 1
 
-void setUpReceiver(char* argv[], int *fdRead, struct termios *oldtio);
-
-void setUpSender(char* argv[], int *fdWrite, struct termios *oldtio);
+void setUpPort(char* argv[], int *fd, struct termios *oldtio);
 
 void readSentence(volatile int *STOP, int fdRead, char* buf);
 

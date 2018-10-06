@@ -8,23 +8,19 @@
 volatile int STOP = FALSE;
 
 int main(int argc, char **argv) {
-  int fdRead = 0, fdWrite = 0;
+  int fd = 0;
   struct termios oldtio;
   char buf[255];
 
   usage(argc, argv);
 
-  setUpReceiver(argv, &fdRead, &oldtio);
+  setUpPort(argv, &fd, &oldtio);
 
-  readSentence(&STOP, fdRead, buf);
+  readSentence(&STOP, fd, buf);
 
-  closeFd(fdRead, &oldtio);
+  writeSentence(fd, buf);
 
-  setUpSender(argv, &fdWrite, &oldtio);
-
-  writeSentence(fdWrite, buf);
-
-  closeFd(fdWrite, &oldtio);
+  closeFd(fd, &oldtio);
 
   return 0;
 }

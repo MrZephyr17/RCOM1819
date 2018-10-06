@@ -18,26 +18,22 @@ void readStdin(char *buf) {
 }
 
 int main(int argc, char **argv) {
-  int fdWrite = 0, fdRead = 0;
+  int fd = 0;
   struct termios oldtio;
   char buf[255];
   char buf2[255];
 
   usage(argc, argv);
 
-  setUpSender(argv, &fdWrite, &oldtio);
+  setUpPort(argv, &fd, &oldtio);
 
   readStdin(buf);
 
-  writeSentence(fdWrite, buf);
+  writeSentence(fd, buf);
 
-  closeFd(fdWrite, &oldtio);
+  readSentence(&STOP, fd, buf2);
 
-  setUpReceiver(argv, &fdRead, &oldtio);
-
-  readSentence(&STOP, fdRead, buf2);
-
-  closeFd(fdRead, &oldtio);
+  closeFd(fd, &oldtio);
 
   return 0;
 }
