@@ -8,12 +8,22 @@
 
 #include "helpers.h"
 
-int alarmFlag = 1, alarmCounter = 1;
+int alarmFlag = 0, alarmCounter = 0;
+
+void print_debug(char *msg)
+{
+  (void)msg;
+
+#ifdef DEBUG
+  printf("%s", msg);
+#endif
+}
 
 void alarm_handler()
 {
   alarmFlag = 1;
   ++alarmCounter;
+  print_debug("Received alarm signal\n");
 }
 
 void setUpAlarmHandler()
@@ -24,54 +34,98 @@ void setUpAlarmHandler()
   sigemptyset(&action.sa_mask); // all signals are delivered
   action.sa_flags = 0;
   sigaction(SIGALRM, &action, NULL);
+
+  print_debug("Installed alarm handler\n");
 }
 
-int llopen_receiver(int port)
+int stateMachineSByte(enum state_t *state, unsigned char buf, int res, unsigned char C)
 {
-  int fd = 0;
-  struct termios oldtio;
-  char *portPath = malloc(PORT_SIZE);
-
-  portPath = (port == 0) ? "/dev/ttyS0" : "dev/ttyS1";
-
-  setUpPort(portPath, &fd, &oldtio);
-
-  if (receiveSupervisionByte(fd, SET_C))
-    sendSupervisionByte(fd, UA_C);
-
-  free(portPath);
+  switch (*state)
+  {
+  case START:
+    if (res > 0 && buf == FLAG)
+      *state = FLAG_RCV;
+    break;
+  case FLAG_RCV:
+    if (res > 0 && buf == A)
+      *state = A_RCV;
+    else if (res > 0 && buf != FLAG)
+      *state = START;
+    break;
+  case A_RCV:
+    if (res > 0 && buf == C)
+      *state = C_RCV;
+    else if (res > 0 && buf == FLAG)
+      *state = FLAG_RCV;
+    else if (res > 0 && buf != FLAG)
+      *state = START;
+    break;
+  case C_RCV:
+    if (res > 0 && buf == (A ^ C))
+      *state = BCC_OK;
+    else if (res > 0 && buf == FLAG)
+      *state = FLAG_RCV;
+    else if (res > 0 && buf != FLAG)
+      *state = START;
+    break;
+  case BCC_OK:
+    if (res > 0 && buf == FLAG)
+      *state = END;
+    else if (res > 0)
+      *state = START;
+    break;
+  case END:
+    break;
+  default:
+    fprintf(stderr, "Invalid set state\n");
+    return -1;
+  }
 
   return 0;
 }
 
-int llopen_transmitter(int port)
+int llopen_receiver(int fd)
 {
+  if (receiveSupervisionByte(fd, SET_C))
+  {
+    print_debug("Received SET_C\n");
 
+    sendSupervisionByte(fd, UA_C);
+  }
+
+  return 0;
+}
+
+int llopen_transmitter(int fd)
+{
   int received = 0;
-  int fd = 0;
-  struct termios oldtio;
-  char *portPath = malloc(PORT_SIZE);
 
-  portPath = (port == 0) ? "/dev/ttyS0"
-                         : "dev/ttyS1";
-
-  setUpPort(portPath, &fd, &oldtio);
   setUpAlarmHandler();
 
-  while (alarmFlag && alarmCounter < MAX_RETRY_NUMBER)
+  unsigned char buf;
+
+  do
   {
     sendSupervisionByte(fd, SET_C);
     alarm(TIME_OUT);
     alarmFlag = 0;
+    int res = 0;
+    enum state_t state = START;
 
     while (!received && !alarmFlag)
     {
-      if (receiveSupervisionByte(fd, UA_C))
-        alarm(0);
-    }
-  }
+      res = read(fd, &buf, 1);
 
-  free(portPath);
+      stateMachineSByte(&state, buf, res, UA_C);
+
+      if (state == BCC_OK)
+      {
+        alarm(0);
+        received = TRUE;
+        print_debug("Received UA_C\n");
+      }
+    }
+  } while (alarmFlag && alarmCounter < MAX_RETRY_NUMBER);
 
   if (alarmFlag && alarmCounter == MAX_RETRY_NUMBER)
     return -1;
@@ -82,14 +136,14 @@ int llopen_transmitter(int port)
   return 0;
 }
 
-int llopen(int port, int flag)
+int llopen(int flag, int fd)
 {
   switch (flag)
   {
   case RECEIVER:
-    return llopen_receiver(port);
+    return llopen_receiver(fd);
   case TRANSMITTER:
-    return llopen_transmitter(port);
+    return llopen_transmitter(fd);
   default:
     fprintf(stderr, "Invalid flag argument!\n");
     return -1;
@@ -115,59 +169,30 @@ int receiveSupervisionByte(int fd, unsigned char C)
   {
     res = read(fd, &buf, 1);
 
-    switch (state)
-    {
-    case START:
-      if (res > 0 && buf == FLAG)
-        state = FLAG_RCV;
-      break;
-    case FLAG_RCV:
-      if (res > 0 && buf == A)
-        state = A_RCV;
-      else if (res > 0 && buf != FLAG)
-        state = START;
-      break;
-    case A_RCV:
-      if (res > 0 && buf == C)
-        state = C_RCV;
-      else if (res > 0 && buf == FLAG)
-        state = FLAG_RCV;
-      else if (res > 0 && buf != FLAG)
-        state = START;
-      break;
-    case C_RCV:
-      if (res > 0 && buf == (A ^ C))
-        state = BCC_OK;
-      else if (res > 0 && buf == FLAG)
-        state = FLAG_RCV;
-      else if (res > 0 && buf != FLAG)
-        state = START;
-      break;
-    case BCC_OK:
-      if (res > 0 && buf == FLAG)
-        state = END;
-      else if (res > 0)
-        state = START;
-      break;
-    default:
-      fprintf(stderr, "Invalid set state\n");
-      return -1;
-    }
+    stateMachineSByte(&state, buf, res, C);
   }
 
-  return 0;
+  return 1;
 }
 
-void setUpPort(char *port, int *fd, struct termios *oldtio)
+void setUpPort(int port, int *fd, struct termios *oldtio)
 {
   struct termios newtio;
+  char *portPath = malloc(PORT_SIZE);
 
-  *fd = open(port, O_RDWR | O_NOCTTY);
+  if (port == 0)
+    strcpy(portPath, "/dev/ttyS0");
+  else
+    strcpy(portPath, "/dev/ttyS1");
+
+  *fd = open(portPath, O_RDWR | O_NOCTTY);
   if (*fd < 0)
   {
-    perror(port);
+    perror(portPath);
     exit(-1);
   }
+
+  free(portPath);
 
   if (tcgetattr(*fd, oldtio) == -1)
   { /* save current port settings */
@@ -226,9 +251,9 @@ void readSentence(volatile int *STOP, int fd, char *buf)
 
 void usage(int argc, char *argv[])
 {
-  if ((argc < 2) || (strcmp("/dev/ttyS0", argv[1]) != 0))
+  if ((argc < 2) || ((strcmp("0", argv[1]) != 0) && (strcmp("1", argv[1]) != 0)))
   {
-    printf("Usage:\t %s SerialPort\n\tex: %s /dev/ttyS0\n", argv[0], argv[0]);
+    printf("Usage:\t %s SerialPort\n\tex: %s 0\n", argv[0], argv[0]);
     exit(1);
   }
 }

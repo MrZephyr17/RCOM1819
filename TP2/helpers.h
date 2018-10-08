@@ -1,6 +1,7 @@
 #pragma once
 
 #include <termios.h>
+#include <stdlib.h>
 
 #define FALSE 0
 #define TRUE 1
@@ -27,11 +28,13 @@ enum state_t
     END
 };
 
+int llopen(int flag, int fd);
+
 int receiveSupervisionByte(int fd, unsigned char C);
 
 int sendSupervisionByte(int fd, unsigned char C);
 
-void setUpPort(char *port, int *fd, struct termios *oldtio);
+void setUpPort(int port, int *fd, struct termios *oldtio);
 
 void readSentence(volatile int *STOP, int fd, char *buf);
 
