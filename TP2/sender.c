@@ -1,12 +1,11 @@
-/*Non-Canonical Input Processing*/
-
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "helpers.h"
 
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
-volatile int STOP = FALSE;
+
+volatile int STOP = false;
 
 void readStdin(char *buf)
 {
@@ -32,7 +31,10 @@ int main(int argc, char **argv)
 
   setUpPort(port, &fd, &oldtio);
 
-  llopen(TRANSMITTER, fd);
+  if(llopen(TRANSMITTER, fd) == -1){
+    fprintf(stderr, "llopen error\n");
+    exit(-1);
+  }
 
   readStdin(buf);
 

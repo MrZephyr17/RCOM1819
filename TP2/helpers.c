@@ -8,22 +8,15 @@
 
 #include "helpers.h"
 
+#define _POSIX_SOURCE 1 /* POSIX compliant source */
+
 int alarmFlag = 0, alarmCounter = 0;
-
-void print_debug(char *msg)
-{
-  (void)msg;
-
-#ifdef DEBUG
-  printf("%s", msg);
-#endif
-}
 
 void alarm_handler()
 {
   alarmFlag = 1;
   ++alarmCounter;
-  print_debug("Received alarm signal\n");
+  debug_print("Received alarm signal\n");
 }
 
 void setUpAlarmHandler()
@@ -35,7 +28,7 @@ void setUpAlarmHandler()
   action.sa_flags = 0;
   sigaction(SIGALRM, &action, NULL);
 
-  print_debug("Installed alarm handler\n");
+  debug_print("Installed alarm handler\n");
 }
 
 int stateMachineSByte(enum state_t *state, unsigned char buf, int res, unsigned char C)
@@ -47,7 +40,7 @@ int stateMachineSByte(enum state_t *state, unsigned char buf, int res, unsigned 
       *state = FLAG_RCV;
     break;
   case FLAG_RCV:
-    if (res > 0 && buf == A)
+    if (res > 0 && buf == A_03)
       *state = A_RCV;
     else if (res > 0 && buf != FLAG)
       *state = START;
@@ -61,7 +54,7 @@ int stateMachineSByte(enum state_t *state, unsigned char buf, int res, unsigned 
       *state = START;
     break;
   case C_RCV:
-    if (res > 0 && buf == (A ^ C))
+    if (res > 0 && buf == (A_03 ^ C))
       *state = BCC_OK;
     else if (res > 0 && buf == FLAG)
       *state = FLAG_RCV;
@@ -77,7 +70,7 @@ int stateMachineSByte(enum state_t *state, unsigned char buf, int res, unsigned 
   case END:
     break;
   default:
-    fprintf(stderr, "Invalid set state\n");
+    fprintf(stderr, "Invalid state\n");
     return -1;
   }
 
@@ -88,7 +81,7 @@ int llopen_receiver(int fd)
 {
   if (receiveSupervisionByte(fd, SET_C))
   {
-    print_debug("Received SET_C\n");
+    debug_print("Received SET_C\n");
 
     sendSupervisionByte(fd, UA_C);
   }
@@ -121,8 +114,8 @@ int llopen_transmitter(int fd)
       if (state == BCC_OK)
       {
         alarm(0);
-        received = TRUE;
-        print_debug("Received UA_C\n");
+        received = true;
+        debug_print("Received UA_C\n");
       }
     }
   } while (alarmFlag && alarmCounter < MAX_RETRY_NUMBER);
@@ -130,7 +123,7 @@ int llopen_transmitter(int fd)
   if (alarmFlag && alarmCounter == MAX_RETRY_NUMBER)
     return -1;
 
-  alarmFlag = FALSE;
+  alarmFlag = false;
   alarmCounter = 0;
 
   return 0;
@@ -154,7 +147,7 @@ int llopen(int flag, int fd)
 
 int sendSupervisionByte(int fd, unsigned char C)
 {
-  unsigned char message[SUPERVISION_SIZE] = {FLAG, A, C, A ^ C, FLAG};
+  unsigned char message[SUPERVISION_SIZE] = {FLAG, A_03, C, A_03 ^ C, FLAG};
 
   return write(fd, message, SUPERVISION_SIZE) > 0;
 }
@@ -234,13 +227,13 @@ void readSentence(volatile int *STOP, int fd, char *buf)
   int i = 0;
   int res;
 
-  while (*STOP == FALSE)
+  while (*STOP == false)
   {                             /* loop for input */
     res = read(fd, buf + i, 1); /* returns after 5 chars have been input */
     if (res > 0)
     {
       if (buf[i] == '\0')
-        *STOP = TRUE;
+        *STOP = true;
 
       i++;
     }
@@ -276,3 +269,55 @@ void closeFd(int fd, struct termios *oldtio)
   }
   close(fd);
 }
+
+int llwrite(int fd, char *buffer, int length)
+{
+}
+
+int llread(int fd, char *buffer)
+{
+}
+
+int llclose(int fd)
+{
+}
+
+unsigned char *stuffing(unsigned char BCC2)
+{
+  unsigned char *BCC2Stuffed = malloc(2 * sizeof(unsigned char));
+  BCC2Stuffed[0] = ESC;
+
+  if (BCC2 == FLAG)
+    BCC2Stuffed[1] = ESC_2;
+  else if (BCC2 == ESC)
+    BCC2Stuffed[1] = ESC_3;
+  else
+    return NULL;
+
+  return BCC2Stuffed;
+}
+
+unsigned char calcBCC2(unsigned char *message, int size)
+{
+  unsigned char BCC2 = message[0];
+  int i;
+
+  for (i = 1; i < size; ++i)
+    BCC2 ^= message[i];
+  
+  return BCC2;
+}
+
+unsigned char* calcFinalMessage(unsigned char* BCC2Stuffed, int size){
+  unsigned char* finalMessage = malloc ((size + 6)*sizeof(unsigned char));
+
+  finalMessage[0] = FLAG;
+  finalMessage[1] = A_03;
+  return finalMessage;
+}
+
+int sendI(unsigned char* I, int size){
+
+}
+
+int readConfirmation()
