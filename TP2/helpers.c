@@ -31,40 +31,57 @@ void setUpAlarmHandler()
   debug_print("Installed alarm handler\n");
 }
 
-int stateMachineSByte(enum state_t *state, unsigned char buf, int res, unsigned char C)
+bool findByteOnArray(unsigned char byte, unsigned char *array)
 {
+  for (int i = 0; (array + i) != NULL; i++)
+  {
+    if (array[i] == byte)
+      return true;
+  }
+
+  return false;
+}
+
+int stateMachineSupervisionMessage(enum state_t *state, unsigned char buf,
+                                   unsigned char *COptions)
+{
+  unsigned char C = ' ';
+
   switch (*state)
   {
   case START:
-    if (res > 0 && buf == FLAG)
+    if (buf == FLAG)
       *state = FLAG_RCV;
     break;
   case FLAG_RCV:
-    if (res > 0 && buf == A_03)
+    if (buf == A_03)
       *state = A_RCV;
-    else if (res > 0 && buf != FLAG)
+    else if (buf != FLAG)
       *state = START;
     break;
   case A_RCV:
-    if (res > 0 && buf == C)
+    if (findByteOnArray(buf, COptions))
+    {
       *state = C_RCV;
-    else if (res > 0 && buf == FLAG)
+      C = buf;
+    }
+    else if (buf == FLAG)
       *state = FLAG_RCV;
-    else if (res > 0 && buf != FLAG)
+    else if (buf != FLAG)
       *state = START;
     break;
   case C_RCV:
-    if (res > 0 && buf == (A_03 ^ C))
+    if (buf == (A_03 ^ C))
       *state = BCC_OK;
-    else if (res > 0 && buf == FLAG)
+    else if (buf == FLAG)
       *state = FLAG_RCV;
-    else if (res > 0 && buf != FLAG)
+    else if (buf != FLAG)
       *state = START;
     break;
   case BCC_OK:
-    if (res > 0 && buf == FLAG)
+    if (buf == FLAG)
       *state = END;
-    else if (res > 0)
+    else
       *state = START;
     break;
   case END:
@@ -77,13 +94,38 @@ int stateMachineSByte(enum state_t *state, unsigned char buf, int res, unsigned 
   return 0;
 }
 
+int receiveSupervisionMessage(int fd, unsigned char C)
+{
+  enum state_t state = START;
+  int res = 0;
+  unsigned char buf;
+  unsigned char COptions[1] = {C};
+
+  while (state != END)
+  {
+    res = read(fd, &buf, 1);
+
+    if (res > 0)
+      stateMachineSupervisionMessage(&state, buf, COptions);
+  }
+
+  return 1;
+}
+
+int sendSupervisionMessage(int fd, unsigned char C)
+{
+  unsigned char message[SUPERVISION_SIZE] = {FLAG, A_03, C, A_03 ^ C, FLAG};
+
+  return write(fd, message, SUPERVISION_SIZE) > 0;
+}
+
 int llopen_receiver(int fd)
 {
-  if (receiveSupervisionByte(fd, SET_C))
+  if (receiveSupervisionMessage(fd, SET_C))
   {
     debug_print("Received SET_C\n");
 
-    sendSupervisionByte(fd, UA_C);
+    sendSupervisionMessage(fd, UA_C);
   }
 
   return 0;
@@ -96,10 +138,11 @@ int llopen_transmitter(int fd)
   setUpAlarmHandler();
 
   unsigned char buf;
+  unsigned char COptions[1] = {UA_C};
 
   do
   {
-    sendSupervisionByte(fd, SET_C);
+    sendSupervisionMessage(fd, SET_C);
     alarm(TIME_OUT);
     alarmFlag = 0;
     int res = 0;
@@ -109,7 +152,8 @@ int llopen_transmitter(int fd)
     {
       res = read(fd, &buf, 1);
 
-      stateMachineSByte(&state, buf, res, UA_C);
+      if (res > 0)
+        stateMachineSupervisionMessage(&state, buf, COptions);
 
       if (state == BCC_OK)
       {
@@ -143,29 +187,6 @@ int llopen(int flag, int fd)
   }
 
   return 0;
-}
-
-int sendSupervisionByte(int fd, unsigned char C)
-{
-  unsigned char message[SUPERVISION_SIZE] = {FLAG, A_03, C, A_03 ^ C, FLAG};
-
-  return write(fd, message, SUPERVISION_SIZE) > 0;
-}
-
-int receiveSupervisionByte(int fd, unsigned char C)
-{
-  enum state_t state = START;
-  int res = 0;
-  unsigned char buf;
-
-  while (state != END)
-  {
-    res = read(fd, &buf, 1);
-
-    stateMachineSByte(&state, buf, res, C);
-  }
-
-  return 1;
 }
 
 void setUpPort(int port, int *fd, struct termios *oldtio)
@@ -244,7 +265,8 @@ void readSentence(volatile int *STOP, int fd, char *buf)
 
 void usage(int argc, char *argv[])
 {
-  if ((argc < 2) || ((strcmp("0", argv[1]) != 0) && (strcmp("1", argv[1]) != 0)))
+  if ((argc < 2) ||
+      ((strcmp("0", argv[1]) != 0) && (strcmp("1", argv[1]) != 0)))
   {
     printf("Usage:\t %s SerialPort\n\tex: %s 0\n", argv[0], argv[0]);
     exit(1);
@@ -270,54 +292,121 @@ void closeFd(int fd, struct termios *oldtio)
   close(fd);
 }
 
-int llwrite(int fd, char *buffer, int length)
+unsigned char *stuffing(unsigned char *data, int dataSize, int *size)
 {
+  int estimate = 20;
+  unsigned char *dataStuffed =
+      malloc((dataSize + estimate) * sizeof(unsigned char));
+  int i = 0, j = 0;
+
+  for (; i < dataSize; i++, j++)
+  {
+    if (data[i] == FLAG)
+    {
+      dataStuffed[j++] = ESC;
+      dataStuffed[j] = ESC_2;
+    }
+    else if (data[i] == ESC)
+    {
+      dataStuffed[j++] = ESC;
+      dataStuffed[j] = ESC_3;
+    }
+    else
+    {
+      dataStuffed[j] = data[i];
+    }
+  }
+
+  dataStuffed = realloc(dataStuffed, j + 1);
+  *size = j + 1;
+
+  return dataStuffed;
 }
 
-int llread(int fd, char *buffer)
+unsigned char calcBCC2(unsigned char *data, int size)
 {
-}
-
-int llclose(int fd)
-{
-}
-
-unsigned char *stuffing(unsigned char BCC2)
-{
-  unsigned char *BCC2Stuffed = malloc(2 * sizeof(unsigned char));
-  BCC2Stuffed[0] = ESC;
-
-  if (BCC2 == FLAG)
-    BCC2Stuffed[1] = ESC_2;
-  else if (BCC2 == ESC)
-    BCC2Stuffed[1] = ESC_3;
-  else
-    return NULL;
-
-  return BCC2Stuffed;
-}
-
-unsigned char calcBCC2(unsigned char *message, int size)
-{
-  unsigned char BCC2 = message[0];
+  unsigned char BCC2 = data[0];
   int i;
 
   for (i = 1; i < size; ++i)
-    BCC2 ^= message[i];
-  
+    BCC2 ^= data[i];
+
   return BCC2;
 }
 
-unsigned char* calcFinalMessage(unsigned char* BCC2Stuffed, int size){
-  unsigned char* finalMessage = malloc ((size + 6)*sizeof(unsigned char));
+unsigned char *calcFinalMessage(unsigned char *data, int size, unsigned char C,
+                                unsigned char BCC2)
+{
+  unsigned char *finalMessage = malloc((size + 6) * sizeof(unsigned char));
 
   finalMessage[0] = FLAG;
   finalMessage[1] = A_03;
+  finalMessage[2] = C;
+  finalMessage[3] = A_03 ^ C;
+
+  int i = 0;
+
+  for (; i < size; i++)
+    finalMessage[i + 4] = data[i];
+
+  i += 4;
+
+  finalMessage[i++] = BCC2;
+  finalMessage[i++] = FLAG;
+
   return finalMessage;
 }
 
-int sendI(unsigned char* I, int size){
+int sendI(int fd, unsigned char *I, int size) { return write(fd, I, size) > 0; }
 
+int llwrite(int fd, unsigned char *buffer, int length)
+{
+
+  int dataSize = 0, received = 0;
+  unsigned char buf;
+  unsigned char COptions[] = {RR0, RR1};
+
+  unsigned char BCC2 = calcBCC2(buffer, length);
+
+  unsigned char *dataStuffed = stuffing(buffer, length, &dataSize);
+
+  free(dataStuffed);
+
+  unsigned char *finalMessage = calcFinalMessage(buffer, dataSize, C_I0, BCC2);
+
+  do
+  {
+    sendI(fd, finalMessage, dataSize + 6);
+    alarm(TIME_OUT);
+    alarmFlag = 0;
+    int res = 0;
+    enum state_t state = START;
+
+    while (!received && !alarmFlag)
+    {
+      res = read(fd, &buf, 1);
+
+      if (res > 0)
+        stateMachineSupervisionMessage(&state, buf, COptions);
+
+      if (state == BCC_OK)
+      {
+        alarm(0);
+        received = true;
+        debug_print("Received RR\n");
+      }
+    }
+  } while (alarmFlag && alarmCounter < MAX_RETRY_NUMBER);
+
+  if (alarmFlag && alarmCounter == MAX_RETRY_NUMBER)
+    return -1;
+
+  free(finalMessage);
+
+  alarmFlag = false;
+  alarmCounter = 0;
 }
 
-int readConfirmation()
+int llread(int fd, char *buffer) {}
+
+int llclose(int fd) {}

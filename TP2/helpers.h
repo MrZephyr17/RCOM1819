@@ -52,9 +52,9 @@ enum state_t
 
 int llopen(int flag, int fd);
 
-int llwrite(int fd, char * buffer, int length);
+int llwrite(int fd, unsigned char *buffer, int length);
 
-int llread(int fd, char * buffer);
+int llread(int fd, char *buffer);
 
 int llclose(int fd);
 
