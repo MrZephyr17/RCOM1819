@@ -29,6 +29,11 @@ enum state_t
 #define REJ1 0x81
 #define C_I0 0x00
 #define C_I1 0x40
+#define START_C 0x02
+#define F_C 0x01
+#define END_C 0x03
+#define T_LENGTH 0x00
+#define T_NAME 0x01
 
 #define TIME_OUT 3
 #define MAX_RETRY_NUMBER 3
@@ -43,7 +48,7 @@ int llopen_receiver(int fd);
 
 int llopen_transmitter(int fd);
 
-int llwrite(int fd, unsigned char *buffer, int length);
+int llwrite(int fd, unsigned char *buffer, int length, unsigned char* answer);
 
 int llread(int fd, char *buffer);
 
@@ -62,7 +67,6 @@ int sendSupervisionMessage(int fd, unsigned char C);
 
 void setUpPort(int port, int *fd, struct termios *oldtio);
 
-int stateMachineSupervisionMessage(enum state_t *state, unsigned char buf,
-                                   unsigned char *COptions);
+int stateMachineSupervisionMessage(enum state_t *state, unsigned char* buf, unsigned char *COptions);
 
 void closeFd(int fd, struct termios *oldtio);

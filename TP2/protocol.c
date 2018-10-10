@@ -10,12 +10,12 @@
 
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
-int alarmFlag = 0, alarmCounter = 0;
+int transmissionFlag = false, transmissionCounter = 0;
 
 void alarm_handler()
 {
-    alarmFlag = 1;
-    ++alarmCounter;
+    transmissionFlag = true;
+    ++transmissionCounter;
     debug_print("Received alarm signal\n");
 }
 
@@ -49,20 +49,21 @@ int llopen_transmitter(int fd)
 
     setUpAlarmHandler();
 
-    unsigned char buf;
+    unsigned char buf[SUPERVISION_SIZE];
     unsigned char COptions[1] = {UA_C};
 
     do
     {
         sendSupervisionMessage(fd, SET_C);
         alarm(TIME_OUT);
-        alarmFlag = 0;
+        transmissionFlag = false;
         int res = 0;
+        int i = 0;
         enum state_t state = START;
 
-        while (!received && !alarmFlag)
+        while (!received && !transmissionFlag)
         {
-            res = read(fd, &buf, 1);
+            res = read(fd, buf + i++, 1);
 
             if (res > 0)
                 stateMachineSupervisionMessage(&state, buf, COptions);
@@ -74,13 +75,13 @@ int llopen_transmitter(int fd)
                 debug_print("Received UA_C\n");
             }
         }
-    } while (alarmFlag && alarmCounter < MAX_RETRY_NUMBER);
+    } while (transmissionFlag && transmissionCounter < MAX_RETRY_NUMBER);
 
-    if (alarmFlag && alarmCounter == MAX_RETRY_NUMBER)
+    if (transmissionFlag && transmissionCounter == MAX_RETRY_NUMBER)
         return -1;
 
-    alarmFlag = false;
-    alarmCounter = 0;
+    transmissionFlag = false;
+    transmissionCounter = 0;
 
     return 0;
 }
@@ -101,12 +102,13 @@ int llopen(int flag, int fd)
     return 0;
 }
 
-int llwrite(int fd, unsigned char *buffer, int length)
+int llwrite(int fd, unsigned char *buffer, int length, unsigned char* answer)
 {
 
     int dataSize = 0, received = 0;
-    unsigned char buf;
-    unsigned char COptions[] = {RR0, RR1};
+    unsigned char C;
+    unsigned char buf[SUPERVISION_SIZE];
+    unsigned char COptions[] = {RR0, RR1, REJ0, REJ1};
 
     unsigned char BCC2 = calcBCC2(buffer, length);
 
@@ -114,39 +116,54 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
     free(dataStuffed);
 
-    unsigned char *finalMessage = calcFinalMessage(buffer, dataSize, C_I0, BCC2);
+    if(answer == NULL || *answer == 0)
+        C = C_I0;
+    else
+        C = C_I1;
+
+    // TODO: C????
+    unsigned char *finalMessage = calcFinalMessage(buffer, dataSize, C, BCC2);
 
     do
     {
         write(fd, finalMessage, dataSize + 6);
         alarm(TIME_OUT);
-        alarmFlag = 0;
+        transmissionFlag = false;
         int res = 0;
+        int i = 0;
         enum state_t state = START;
 
-        while (!received && !alarmFlag)
+        while (!received && !transmissionFlag)
         {
-            res = read(fd, &buf, 1);
+            res = read(fd, buf + i++, 1);
 
             if (res > 0)
                 stateMachineSupervisionMessage(&state, buf, COptions);
 
-            if (state == BCC_OK)
+            if (state == END)
             {
                 alarm(0);
                 received = true;
                 debug_print("Received RR\n");
             }
+            else if (state == C_RCV && (buf[2] == REJ0 || buf[2] == REJ1))
+            { 
+                transmissionCounter++;
+                transmissionFlag = true;
+                break;
+            }
         }
-    } while (alarmFlag && alarmCounter < MAX_RETRY_NUMBER);
+    } while (transmissionFlag && transmissionCounter < MAX_RETRY_NUMBER);
 
-    if (alarmFlag && alarmCounter == MAX_RETRY_NUMBER)
+    if (transmissionFlag && transmissionCounter == MAX_RETRY_NUMBER)
         return -1;
+
+    *answer = buf[2];
 
     free(finalMessage);
 
-    alarmFlag = false;
-    alarmCounter = 0;
+    transmissionFlag = false;
+    transmissionCounter = 0;
 }
 
 int llread(int fd, char *buffer)
@@ -157,20 +174,22 @@ int llclose(int fd) {}
 
 unsigned char *stuffing(unsigned char *data, int dataSize, int *size)
 {
-    int estimate = 20;
+    int stuffedSize = dataSize;
     unsigned char *dataStuffed =
-        malloc((dataSize + estimate) * sizeof(unsigned char));
+        malloc(stuffedSize * sizeof(unsigned char));
     int i = 0, j = 0;
 
     for (; i < dataSize; i++, j++)
     {
         if (data[i] == FLAG)
         {
+            dataStuffed = realloc(dataStuffed, (++stuffedSize) * sizeof(unsigned char));
             dataStuffed[j++] = ESC;
             dataStuffed[j] = ESC_2;
         }
         else if (data[i] == ESC)
         {
+            dataStuffed = realloc(dataStuffed, (++stuffedSize) * sizeof(unsigned char));
             dataStuffed[j++] = ESC;
             dataStuffed[j] = ESC_3;
         }
@@ -180,8 +199,7 @@ unsigned char *stuffing(unsigned char *data, int dataSize, int *size)
         }
     }
 
-    dataStuffed = realloc(dataStuffed, j + 1);
-    *size = j + 1;
+    *size = stuffedSize;
 
     return dataStuffed;
 }
@@ -224,12 +242,13 @@ int receiveSupervisionMessage(int fd, unsigned char C)
 {
     enum state_t state = START;
     int res = 0;
-    unsigned char buf;
+    unsigned char buf[SUPERVISION_SIZE];
     unsigned char COptions[1] = {C};
+    int i = 0;
 
     while (state != END)
     {
-        res = read(fd, &buf, 1);
+        res = read(fd, buf + i++, 1);
 
         if (res > 0)
             stateMachineSupervisionMessage(&state, buf, COptions);
@@ -245,44 +264,40 @@ int sendSupervisionMessage(int fd, unsigned char C)
     return write(fd, message, SUPERVISION_SIZE) > 0;
 }
 
-int stateMachineSupervisionMessage(enum state_t *state, unsigned char buf,
-                                   unsigned char *COptions)
+int stateMachineSupervisionMessage(enum state_t *state, unsigned char *buf, unsigned char *COptions)
 {
-    unsigned char C = ' ';
-
     switch (*state)
     {
     case START:
-        if (buf == FLAG)
+        if (buf[0] == FLAG)
             *state = FLAG_RCV;
         break;
     case FLAG_RCV:
-        if (buf == A_03)
+        if (buf[1] == A_03)
             *state = A_RCV;
-        else if (buf != FLAG)
+        else if (buf[1] != FLAG)
             *state = START;
         break;
     case A_RCV:
-        if (findByteOnArray(buf, COptions))
+        if (findByteOnArray(buf[2], COptions))
         {
             *state = C_RCV;
-            C = buf;
         }
-        else if (buf == FLAG)
+        else if (buf[2] == FLAG)
             *state = FLAG_RCV;
-        else if (buf != FLAG)
+        else if (buf[2] != FLAG)
             *state = START;
         break;
     case C_RCV:
-        if (buf == (A_03 ^ C))
+        if (buf[3] == (A_03 ^ buf[2]))
             *state = BCC_OK;
-        else if (buf == FLAG)
+        else if (buf[3] == FLAG)
             *state = FLAG_RCV;
-        else if (buf != FLAG)
+        else if (buf[3] != FLAG)
             *state = START;
         break;
     case BCC_OK:
-        if (buf == FLAG)
+        if (buf[4] == FLAG)
             *state = END;
         else
             *state = START;
