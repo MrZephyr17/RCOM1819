@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "helpers.h"
+#include "protocol.h"
 
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
