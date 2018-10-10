@@ -49,7 +49,7 @@ int llopen_transmitter(int fd)
 
     setUpAlarmHandler();
 
-    unsigned char buf[SUPERVISION_SIZE];
+    unsigned char buf, C;
     unsigned char COptions[1] = {UA_C};
 
     do
@@ -58,17 +58,16 @@ int llopen_transmitter(int fd)
         alarm(TIME_OUT);
         transmissionFlag = false;
         int res = 0;
-        int i = 0;
         enum state_t state = START;
 
         while (!received && !transmissionFlag)
         {
-            res = read(fd, buf + i++, 1);
+            res = read(fd, &buf, 1);
 
             if (res > 0)
-                stateMachineSupervisionMessage(&state, buf, COptions);
+                stateMachineSupervisionMessage(&state, buf, &C, COptions);
 
-            if (state == BCC_OK)
+            if (state == END)
             {
                 alarm(0);
                 received = true;
@@ -102,12 +101,12 @@ int llopen(int flag, int fd)
     return 0;
 }
 
-int llwrite(int fd, unsigned char *buffer, int length, unsigned char* answer)
+int llwrite(int fd, unsigned char *buffer, int length, unsigned char *answer)
 {
 
     int dataSize = 0, received = 0;
     unsigned char C;
-    unsigned char buf[SUPERVISION_SIZE];
+    unsigned char buf;
     unsigned char COptions[] = {RR0, RR1, REJ0, REJ1};
 
     unsigned char BCC2 = calcBCC2(buffer, length);
@@ -116,12 +115,11 @@ int llwrite(int fd, unsigned char *buffer, int length, unsigned char* answer)
 
     free(dataStuffed);
 
-    if(answer == NULL || *answer == 0)
+    if (answer == NULL || *answer == 0)
         C = C_I0;
     else
         C = C_I1;
 
-    // TODO: C????
     unsigned char *finalMessage = calcFinalMessage(buffer, dataSize, C, BCC2);
 
     do
@@ -130,15 +128,14 @@ int llwrite(int fd, unsigned char *buffer, int length, unsigned char* answer)
         alarm(TIME_OUT);
         transmissionFlag = false;
         int res = 0;
-        int i = 0;
         enum state_t state = START;
 
         while (!received && !transmissionFlag)
         {
-            res = read(fd, buf + i++, 1);
+            res = read(fd, &buf, 1);
 
             if (res > 0)
-                stateMachineSupervisionMessage(&state, buf, COptions);
+              stateMachineSupervisionMessage(&state, buf, answer, COptions);
 
             if (state == END)
             {
@@ -146,8 +143,9 @@ int llwrite(int fd, unsigned char *buffer, int length, unsigned char* answer)
                 received = true;
                 debug_print("Received RR\n");
             }
-            else if (state == C_RCV && (buf[2] == REJ0 || buf[2] == REJ1))
-            { 
+            else if (state == C_RCV &&
+                     (*answer == REJ0 || *answer == REJ1))
+            {
                 transmissionCounter++;
                 transmissionFlag = true;
                 break;
@@ -157,8 +155,6 @@ int llwrite(int fd, unsigned char *buffer, int length, unsigned char* answer)
 
     if (transmissionFlag && transmissionCounter == MAX_RETRY_NUMBER)
         return -1;
-
-    *answer = buf[2];
 
     free(finalMessage);
 
@@ -242,16 +238,15 @@ int receiveSupervisionMessage(int fd, unsigned char C)
 {
     enum state_t state = START;
     int res = 0;
-    unsigned char buf[SUPERVISION_SIZE];
+    unsigned char buf;
     unsigned char COptions[1] = {C};
-    int i = 0;
 
     while (state != END)
     {
-        res = read(fd, buf + i++, 1);
+        res = read(fd, &buf, 1);
 
         if (res > 0)
-            stateMachineSupervisionMessage(&state, buf, COptions);
+          stateMachineSupervisionMessage(&state, buf, &C, COptions);
     }
 
     return 1;
@@ -264,40 +259,41 @@ int sendSupervisionMessage(int fd, unsigned char C)
     return write(fd, message, SUPERVISION_SIZE) > 0;
 }
 
-int stateMachineSupervisionMessage(enum state_t *state, unsigned char *buf, unsigned char *COptions)
+int stateMachineSupervisionMessage(enum state_t *state, unsigned char buf, unsigned char *C, unsigned char *COptions)
 {
     switch (*state)
     {
     case START:
-        if (buf[0] == FLAG)
+        if (buf == FLAG)
             *state = FLAG_RCV;
         break;
     case FLAG_RCV:
-        if (buf[1] == A_03)
+        if (buf == A_03)
             *state = A_RCV;
-        else if (buf[1] != FLAG)
+        else if (buf != FLAG)
             *state = START;
         break;
     case A_RCV:
-        if (findByteOnArray(buf[2], COptions))
+        if (findByteOnArray(buf, COptions))
         {
             *state = C_RCV;
+            *C = buf;
         }
-        else if (buf[2] == FLAG)
+        else if (buf == FLAG)
             *state = FLAG_RCV;
-        else if (buf[2] != FLAG)
+        else if (buf != FLAG)
             *state = START;
         break;
     case C_RCV:
-        if (buf[3] == (A_03 ^ buf[2]))
+        if (buf == (A_03 ^ *C))
             *state = BCC_OK;
-        else if (buf[3] == FLAG)
+        else if (buf == FLAG)
             *state = FLAG_RCV;
-        else if (buf[3] != FLAG)
+        else if (buf != FLAG)
             *state = START;
         break;
     case BCC_OK:
-        if (buf[4] == FLAG)
+        if (buf == FLAG)
             *state = END;
         else
             *state = START;
@@ -363,7 +359,7 @@ void setUpPort(int port, int *fd, struct termios *oldtio)
 
     sleep(1);
 
-    printf("New termios structure set\n");
+    debug_print("New termios structure set\n");
 }
 
 void closeFd(int fd, struct termios *oldtio)

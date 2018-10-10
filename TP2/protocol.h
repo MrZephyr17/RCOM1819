@@ -67,6 +67,6 @@ int sendSupervisionMessage(int fd, unsigned char C);
 
 void setUpPort(int port, int *fd, struct termios *oldtio);
 
-int stateMachineSupervisionMessage(enum state_t *state, unsigned char* buf, unsigned char *COptions);
+int stateMachineSupervisionMessage(enum state_t *state, unsigned char buf, unsigned char *C, unsigned char *COptions);
 
 void closeFd(int fd, struct termios *oldtio);
