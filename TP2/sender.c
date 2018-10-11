@@ -32,7 +32,7 @@ unsigned char *getTLVLength(int fileLength)
   return TLV;
 }
 
-unsigned char* getTLVName(char *fileName, int stringLength)
+unsigned char *getTLVName(char *fileName, int stringLength)
 {
   unsigned char *TLV = malloc(2 + stringLength);
 
@@ -45,15 +45,17 @@ unsigned char* getTLVName(char *fileName, int stringLength)
 
 unsigned char *getDelimPackage(unsigned char C, int fileLength, char *fileName, int stringLength)
 {
-  unsigned char *delim = malloc((1 + 2 + 2 + stringLength + sizeof(fileLength)) * sizeof(unsigned char));
+  int size = 1 + 2 + 2 + stringLength + sizeof(fileLength);
+  unsigned char *delim = malloc(size * sizeof(unsigned char));
 
   delim[0] = C;
 
-  unsigned char * TLVLength = getTLVLength(fileLength);
-  unsigned char* TLVName = getTLVName(fileName, stringLength);
+  unsigned char *TLVLength = getTLVLength(fileLength);
+  unsigned char *TLVName = getTLVName(fileName, stringLength);
 
-  memcpy(delim + 1, TLVLength, sizeof(*TLVLength));
-  memcpy(delim + sizeof(TLVLength), TLVName, sizeof(*TLVName));
+  memcpy(delim + 1, TLVLength, 2 + sizeof(fileLength));
+
+  memcpy(delim + sizeof(TLVLength), TLVName, 2 + stringLength);
 
   free(TLVLength);
   free(TLVName);
@@ -61,16 +63,20 @@ unsigned char *getDelimPackage(unsigned char C, int fileLength, char *fileName, 
   return delim;
 }
 
-unsigned char* getFragment(int seqNum, unsigned char* data, int K){
-    unsigned char *fragment = malloc((4 + K) * sizeof(unsigned char));
+unsigned char *getFragment(int seqNum, char *data, int K)
+{
+  unsigned char *fragment = malloc((4 + K) * sizeof(unsigned char));
 
-    fragment[0] = F_C;
-    fragment[1] = seqNum % 255;
-    fragment[2] = K % 256;
-    fragment[3] = K / 256;
-    memcpy(fragment + 4, data, K);
+  fragment[0] = F_C;
+  fragment[1] = seqNum % 255;
+  fragment[2] = K % 256;
+  fragment[3] = K / 256;
+  memcpy(fragment + 4, data, K);
 
-    return fragment;
+  for (int i = 0; i < K + 4; i++)
+    printf("0x%02X\n", fragment[i]);
+
+  return fragment;
 }
 
 int main(int argc, char **argv)
@@ -92,9 +98,19 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
-  readStdin(buf);
+  unsigned char *start = getDelimPackage(START_C, 10, "pinguim.gif", 12);
 
-  writeSentence(fd, buf);
+  unsigned char *end = getDelimPackage(END, 10, "pinguim.gif", 12);
+
+  unsigned char *fragment = getFragment(0, "ok", 3);
+
+  free(start);
+  free(end);
+  free(fragment);
+
+  // readStdin(buf);
+
+  // writeSentence(fd, buf);
 
   closeFd(fd, &oldtio);
 
