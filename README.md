@@ -9,8 +9,8 @@ Sending a file through serial port to another computer.
 ### Build
 
 ```bash
-gcc -o sender sender.c helpers.c protocol.c -Wall -Wextra
-gcc -o receiver receiver.c helpers.c protocol.c -Wall -Wextra
+gcc -o sender sender.c utils.c protocol.c -Wall -Wextra
+gcc -o receiver receiver.c utils.c protocol.c -Wall -Wextra
 ```
 
 In order to see debug messages, append `-D DEBUG`.

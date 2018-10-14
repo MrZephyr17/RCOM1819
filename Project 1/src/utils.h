@@ -21,6 +21,4 @@ bool findByteOnArray(unsigned char byte, unsigned char *array);
 
 void readSentence(volatile int *STOP, int fd, char *buf);
 
-void usage(int argc, char *argv[]);
-
 void writeSentence(int fd, char *buf);

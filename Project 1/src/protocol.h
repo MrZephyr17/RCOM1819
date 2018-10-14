@@ -48,7 +48,7 @@ int llopen_receiver(int fd);
 
 int llopen_transmitter(int fd);
 
-int llwrite(int fd, unsigned char *buffer, int length, unsigned char* answer);
+int llwrite(int fd, unsigned char *buffer, int length);
 
 int llread(int fd, char *buffer);
 

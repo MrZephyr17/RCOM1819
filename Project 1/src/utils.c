@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "helpers.h"
+#include "utils.h"
 
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
@@ -37,16 +37,6 @@ void readSentence(volatile int *STOP, int fd, char *buf)
   }
 
   printf("%s\n", buf);
-}
-
-void usage(int argc, char *argv[])
-{
-  if ((argc < 2) ||
-      ((strcmp("0", argv[1]) != 0) && (strcmp("1", argv[1]) != 0)))
-  {
-    printf("Usage:\t %s SerialPort\n\tex: %s 0\n", argv[0], argv[0]);
-    exit(1);
-  }
 }
 
 void writeSentence(int fd, char *buf)

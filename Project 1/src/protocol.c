@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #include "protocol.h"
-#include "helpers.h"
+#include "utils.h"
 
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
@@ -101,21 +101,22 @@ int llopen(int flag, int fd)
     return 0;
 }
 
-int llwrite(int fd, unsigned char *buffer, int length, unsigned char *answer)
+// TODO: answer
+int llwrite(int fd, unsigned char *buffer, int length)
 {
 
     int dataSize = 0, received = 0;
     unsigned char C;
     unsigned char buf;
     unsigned char COptions[] = {RR0, RR1, REJ0, REJ1};
-
+    unsigned char answer = 0;
     unsigned char BCC2 = calcBCC2(buffer, length);
 
     unsigned char *dataStuffed = stuffing(buffer, length, &dataSize);
 
     free(dataStuffed);
 
-    if (answer == NULL || *answer == 0)
+    if (answer == REJ0)
         C = C_I0;
     else
         C = C_I1;
@@ -135,7 +136,7 @@ int llwrite(int fd, unsigned char *buffer, int length, unsigned char *answer)
             res = read(fd, &buf, 1);
 
             if (res > 0)
-              stateMachineSupervisionMessage(&state, buf, answer, COptions);
+                stateMachineSupervisionMessage(&state, buf, &answer, COptions);
 
             if (state == END)
             {
@@ -144,10 +145,11 @@ int llwrite(int fd, unsigned char *buffer, int length, unsigned char *answer)
                 debug_print("Received RR\n");
             }
             else if (state == C_RCV &&
-                     (*answer == REJ0 || *answer == REJ1))
+                     (answer == REJ0 || answer == REJ1))
             {
                 transmissionCounter++;
                 transmissionFlag = true;
+                alarm(0);
                 break;
             }
         }
@@ -246,7 +248,7 @@ int receiveSupervisionMessage(int fd, unsigned char C)
         res = read(fd, &buf, 1);
 
         if (res > 0)
-          stateMachineSupervisionMessage(&state, buf, &C, COptions);
+            stateMachineSupervisionMessage(&state, buf, &C, COptions);
     }
 
     return 1;
