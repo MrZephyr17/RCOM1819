@@ -57,6 +57,8 @@ int llclose(int fd);
 unsigned char *calcFinalMessage(unsigned char *data, int size, unsigned char C,
                                 unsigned char BCC2);
 
+void updateMessage(unsigned char *message, unsigned char answer);
+
 unsigned char calcBCC2(unsigned char *data, int size);
 
 unsigned char *stuffing(unsigned char *data, int dataSize, int *size);

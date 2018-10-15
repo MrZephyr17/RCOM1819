@@ -10,7 +10,8 @@
 
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
-int transmissionFlag = false, transmissionCounter = 0;
+bool transmissionFlag = false;
+int transmissionCounter = 0;
 
 void alarm_handler()
 {
@@ -45,7 +46,7 @@ int llopen_receiver(int fd)
 
 int llopen_transmitter(int fd)
 {
-    int received = 0;
+    bool received = false;
 
     setUpAlarmHandler();
 
@@ -104,28 +105,22 @@ int llopen(int flag, int fd)
 // TODO: answer
 int llwrite(int fd, unsigned char *buffer, int length)
 {
-
-    int dataSize = 0, received = 0;
+    int dataSize = 0, res = 0;
+    bool received = false;
     unsigned char C;
     unsigned char buf;
     unsigned char COptions[] = {RR0, RR1, REJ0, REJ1};
     unsigned char answer = 0;
     unsigned char BCC2 = calcBCC2(buffer, length);
-
     unsigned char *dataStuffed = stuffing(buffer, length, &dataSize);
 
     free(dataStuffed);
 
-    if (answer == REJ0)
-        C = C_I0;
-    else
-        C = C_I1;
-
-    unsigned char *finalMessage = calcFinalMessage(buffer, dataSize, C, BCC2);
+    unsigned char *finalMessage = calcFinalMessage(dataStuffed, dataSize, C, BCC2);
 
     do
     {
-        write(fd, finalMessage, dataSize + 6);
+        res = write(fd, finalMessage, dataSize + 6);
         alarm(TIME_OUT);
         transmissionFlag = false;
         int res = 0;
@@ -150,18 +145,20 @@ int llwrite(int fd, unsigned char *buffer, int length)
                 transmissionCounter++;
                 transmissionFlag = true;
                 alarm(0);
-                break;
+                updateMessage(finalMessage, answer);
             }
         }
     } while (transmissionFlag && transmissionCounter < MAX_RETRY_NUMBER);
 
+    free(finalMessage);
+
     if (transmissionFlag && transmissionCounter == MAX_RETRY_NUMBER)
         return -1;
 
-    free(finalMessage);
-
     transmissionFlag = false;
     transmissionCounter = 0;
+
+    return res;
 }
 
 int llread(int fd, char *buffer)
@@ -169,6 +166,14 @@ int llread(int fd, char *buffer)
 }
 
 int llclose(int fd) {}
+
+void updateMessage(unsigned char *message, unsigned char answer)
+{
+    unsigned char C = answer == REJ0 ? C_I0 : C_I1;
+
+    message[2] = C;
+    message[3] = message[1] ^ C;
+}
 
 unsigned char *stuffing(unsigned char *data, int dataSize, int *size)
 {
