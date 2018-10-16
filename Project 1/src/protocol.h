@@ -2,15 +2,17 @@
 
 #include <termios.h>
 
-enum state_t
+typedef enum
 {
     START,
     FLAG_RCV,
     A_RCV,
     C_RCV,
-    BCC_OK,
+    BCC1_OK,
+    DATA_RCV,
+    BCC2_OK,
     END
-};
+} state_t;
 
 #define TRANSMITTER 0
 #define RECEIVER 1
@@ -34,6 +36,7 @@ enum state_t
 #define END_C 0x03
 #define T_LENGTH 0x00
 #define T_NAME 0x01
+#define DISC 0x0B
 
 #define TIME_OUT 3
 #define MAX_RETRY_NUMBER 3
@@ -52,7 +55,11 @@ int llwrite(int fd, unsigned char *buffer, int length);
 
 int llread(int fd, char *buffer);
 
-int llclose(int fd);
+int llclose(int fd, int flag);
+
+int llclose_receiver(int fd);
+
+int llclose_transmitter(int fd);
 
 unsigned char *calcFinalMessage(unsigned char *data, int size, unsigned char C,
                                 unsigned char BCC2);
@@ -63,12 +70,14 @@ unsigned char calcBCC2(unsigned char *data, int size);
 
 unsigned char *stuffing(unsigned char *data, int dataSize, int *size);
 
-int receiveSupervisionMessage(int fd, unsigned char C);
+int receiveSupervisionMessage(int fd, unsigned char A, unsigned char C);
 
-int sendSupervisionMessage(int fd, unsigned char C);
+int sendSupervisionMessage(int fd, unsigned char A, unsigned char C);
 
 void setUpPort(int port, int *fd, struct termios *oldtio);
+ 
+int stateMachineSupervisionMessage(state_t *state, unsigned char buf, unsigned char A, unsigned char *C, unsigned char *COptions);
 
-int stateMachineSupervisionMessage(enum state_t *state, unsigned char buf, unsigned char *C, unsigned char *COptions);
+int stateMachineIMessage(state_t *state, unsigned char buf, unsigned char *C, unsigned char *COptions);
 
 void closeFd(int fd, struct termios *oldtio);

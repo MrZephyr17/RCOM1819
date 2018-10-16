@@ -127,39 +127,41 @@ int main(int argc, char **argv) {
   strcpy(filename, argv[2]);
   fileData = readImageFile(filename, &fileSize);
 
-  // setUpPort(port, &fd, &oldtio);
+  setUpPort(port, &fd, &oldtio);
 
-  // if (llopen(TRANSMITTER, fd) == -1)
-  // {
-  //   fprintf(stderr, "llopen error\n");
-  //   exit(-1);
-  // }
+  if (llopen(TRANSMITTER, fd) == -1)
+  {
+    fprintf(stderr, "llopen error\n");
+    exit(-1);
+  }
 
-  unsigned char *start = getDelimPackage(START_C, fileSize, filename,
-                                         strlen(filename), &delimSize);
+  // unsigned char *start = getDelimPackage(START_C, fileSize, filename,
+  //                                        strlen(filename), &delimSize);
 
   // for (int i = 0; i < delimSize; i++)
   //   printf("%d - 0x%02X\n", i, start[i]);
 
-  unsigned char *end = malloc(delimSize * sizeof(unsigned char));
-  memcpy(end, start, delimSize);
-  end[0] = END_C;
+  // unsigned char *end = malloc(delimSize * sizeof(unsigned char));
+  // memcpy(end, start, delimSize);
+  // end[0] = END_C;
 
-  for (int i = 0; i < delimSize; i++)
-    printf("%d - 0x%02X\n", i, end[i]);
+  // for (int i = 0; i < delimSize; i++)
+  //   printf("%d - 0x%02X\n", i, end[i]);
 
-  unsigned char *fragment = getFragment(0, "ok", 3);
+  // unsigned char *fragment = getFragment(0, "ok", 3);
 
-  free(start);
-  free(end);
-  free(fragment);
+  // free(start);
+  // free(end);
+  // free(fragment);
   // free(fileData);
 
   // readStdin(buf);
 
   // writeSentence(fd, buf);
 
-  // closeFd(fd, &oldtio);
+  llclose(fd, TRANSMITTER);
+
+  closeFd(fd, &oldtio);
 
   return 0;
 }

@@ -12,6 +12,7 @@
 
 bool transmissionFlag = false;
 int transmissionCounter = 0;
+unsigned char C_I = C_I0;
 
 void alarm_handler()
 {
@@ -34,14 +35,38 @@ void setUpAlarmHandler()
 
 int llopen_receiver(int fd)
 {
-    if (receiveSupervisionMessage(fd, SET_C))
+    if (receiveSupervisionMessage(fd, A_03, SET_C))
     {
         debug_print("Received SET_C\n");
 
-        sendSupervisionMessage(fd, UA_C);
+        sendSupervisionMessage(fd, A_03, UA_C);
     }
 
     return 0;
+}
+
+int receiveIMessage(int fd)
+{
+    state_t state = START;
+    int res = 0;
+    unsigned char buf;
+    unsigned char *data;
+    unsigned char C;
+    unsigned char COptions[2] = {C_I0, C_I1};
+
+    while (state != END)
+    {
+        res = read(fd, &buf, 1);
+
+        if (res > 0)
+            stateMachineIMessage(&state, buf, &C, COptions);
+
+        if (state == BCC1_OK)
+        {
+        }
+    }
+
+    return 1;
 }
 
 int llopen_transmitter(int fd)
@@ -55,18 +80,18 @@ int llopen_transmitter(int fd)
 
     do
     {
-        sendSupervisionMessage(fd, SET_C);
+        sendSupervisionMessage(fd, A_03, SET_C);
         alarm(TIME_OUT);
         transmissionFlag = false;
         int res = 0;
-        enum state_t state = START;
+        state_t state = START;
 
         while (!received && !transmissionFlag)
         {
             res = read(fd, &buf, 1);
 
             if (res > 0)
-                stateMachineSupervisionMessage(&state, buf, &C, COptions);
+                stateMachineSupervisionMessage(&state, buf, A_03, &C, COptions);
 
             if (state == END)
             {
@@ -116,7 +141,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
     free(dataStuffed);
 
-    unsigned char *finalMessage = calcFinalMessage(dataStuffed, dataSize, C, BCC2);
+    unsigned char *finalMessage = calcFinalMessage(dataStuffed, dataSize, C_I, BCC2);
 
     do
     {
@@ -124,14 +149,14 @@ int llwrite(int fd, unsigned char *buffer, int length)
         alarm(TIME_OUT);
         transmissionFlag = false;
         int res = 0;
-        enum state_t state = START;
+        state_t state = START;
 
         while (!received && !transmissionFlag)
         {
             res = read(fd, &buf, 1);
 
             if (res > 0)
-                stateMachineSupervisionMessage(&state, buf, &answer, COptions);
+                stateMachineSupervisionMessage(&state, buf, A_03, &answer, COptions);
 
             if (state == END)
             {
@@ -145,7 +170,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
                 transmissionCounter++;
                 transmissionFlag = true;
                 alarm(0);
-                updateMessage(finalMessage, answer);
             }
         }
     } while (transmissionFlag && transmissionCounter < MAX_RETRY_NUMBER);
@@ -157,22 +181,91 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
     transmissionFlag = false;
     transmissionCounter = 0;
+    C_I = answer == RR0 ? C_I0 : C_I1;
 
     return res;
 }
 
 int llread(int fd, char *buffer)
 {
+    return 0;
 }
 
-int llclose(int fd) {}
-
-void updateMessage(unsigned char *message, unsigned char answer)
+int llclose(int fd, int flag)
 {
-    unsigned char C = answer == REJ0 ? C_I0 : C_I1;
+    switch (flag)
+    {
+    case RECEIVER:
+        return llclose_receiver(fd);
+    case TRANSMITTER:
+        return llclose_transmitter(fd);
+    default:
+        fprintf(stderr, "Invalid flag argument!\n");
+        return -1;
+    }
 
-    message[2] = C;
-    message[3] = message[1] ^ C;
+    return 0;
+}
+
+int llclose_receiver(int fd)
+{
+    if (receiveSupervisionMessage(fd, A_03, DISC))
+    {
+        debug_print("Received DISC\n");
+
+        sendSupervisionMessage(fd, A_01, DISC);
+    }
+
+    if (receiveSupervisionMessage(fd, A_01, UA_C))
+    {
+        debug_print("Received UA_C\n");
+    }
+
+    return 0;
+}
+
+int llclose_transmitter(int fd)
+{
+    bool received = false;
+
+    setUpAlarmHandler();
+
+    unsigned char buf, C;
+    unsigned char COptions[1] = {DISC};
+
+    do
+    {
+        sendSupervisionMessage(fd, A_03, DISC);
+        alarm(TIME_OUT);
+        transmissionFlag = false;
+        int res = 0;
+        state_t state = START;
+
+        while (!received && !transmissionFlag)
+        {
+            res = read(fd, &buf, 1);
+
+            if (res > 0)
+                stateMachineSupervisionMessage(&state, buf, A_01, &C, COptions);
+
+            if (state == END)
+            {
+                alarm(0);
+                received = true;
+                debug_print("Received DISC\n");
+            }
+        }
+    } while (transmissionFlag && transmissionCounter < MAX_RETRY_NUMBER);
+
+    if (transmissionFlag && transmissionCounter == MAX_RETRY_NUMBER)
+        return -1;
+
+    transmissionFlag = false;
+    transmissionCounter = 0;
+
+    sendSupervisionMessage(fd, A_01, UA_C);
+
+    return 0;
 }
 
 unsigned char *stuffing(unsigned char *data, int dataSize, int *size)
@@ -241,9 +334,9 @@ unsigned char *calcFinalMessage(unsigned char *data, int size, unsigned char C,
     return finalMessage;
 }
 
-int receiveSupervisionMessage(int fd, unsigned char C)
+int receiveSupervisionMessage(int fd, unsigned char A, unsigned char C)
 {
-    enum state_t state = START;
+    state_t state = START;
     int res = 0;
     unsigned char buf;
     unsigned char COptions[1] = {C};
@@ -253,20 +346,20 @@ int receiveSupervisionMessage(int fd, unsigned char C)
         res = read(fd, &buf, 1);
 
         if (res > 0)
-            stateMachineSupervisionMessage(&state, buf, &C, COptions);
+            stateMachineSupervisionMessage(&state, buf, A, &C, COptions);
     }
 
     return 1;
 }
 
-int sendSupervisionMessage(int fd, unsigned char C)
+int sendSupervisionMessage(int fd, unsigned char A, unsigned char C)
 {
-    unsigned char message[SUPERVISION_SIZE] = {FLAG, A_03, C, A_03 ^ C, FLAG};
+    unsigned char message[SUPERVISION_SIZE] = {FLAG, A, C, A ^ C, FLAG};
 
     return write(fd, message, SUPERVISION_SIZE) > 0;
 }
 
-int stateMachineSupervisionMessage(enum state_t *state, unsigned char buf, unsigned char *C, unsigned char *COptions)
+int stateMachineIMessage(state_t *state, unsigned char buf, unsigned char *C, unsigned char *COptions)
 {
     switch (*state)
     {
@@ -293,13 +386,69 @@ int stateMachineSupervisionMessage(enum state_t *state, unsigned char buf, unsig
         break;
     case C_RCV:
         if (buf == (A_03 ^ *C))
-            *state = BCC_OK;
+            *state = BCC1_OK;
         else if (buf == FLAG)
             *state = FLAG_RCV;
         else if (buf != FLAG)
             *state = START;
         break;
-    case BCC_OK:
+    case BCC1_OK:
+        break;
+    case DATA_RCV:
+        break;
+    case BCC2_OK:
+        break;
+    case END:
+        break;
+    default:
+        fprintf(stderr, "Invalid state\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+bool checkBBC2(unsigned char rec_BCC2, unsigned char *data, int size)
+{
+    unsigned char exp_BCC2 = calcBCC2(data, size);
+
+    return rec_BCC2 == exp_BCC2;
+}
+
+int stateMachineSupervisionMessage(state_t *state, unsigned char buf, unsigned char A, unsigned char *C, unsigned char *COptions)
+{
+    switch (*state)
+    {
+    case START:
+        if (buf == FLAG)
+            *state = FLAG_RCV;
+        break;
+    case FLAG_RCV:
+        if (buf == A)
+            *state = A_RCV;
+        else if (buf != FLAG)
+            *state = START;
+        break;
+    case A_RCV:
+        if (findByteOnArray(buf, COptions))
+        {
+            *state = C_RCV;
+            *C = buf;
+        }
+        else if (buf == FLAG)
+            *state = FLAG_RCV;
+        else if (buf != FLAG)
+            *state = START;
+        break;
+    case C_RCV:
+        if (buf == (A ^ *C))
+            *state = BCC1_OK;
+        else if (buf == FLAG)
+            *state = FLAG_RCV;
+        else if (buf != FLAG)
+            *state = START;
+        break;
+    case BCC1_OK:
         if (buf == FLAG)
             *state = END;
         else

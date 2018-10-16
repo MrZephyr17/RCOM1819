@@ -32,7 +32,9 @@ int main(int argc, char **argv)
 
   llopen(RECEIVER, fd);
 
-  readSentence(&STOP, fd, buf);
+  // readSentence(&STOP, fd, buf);
+
+  llclose(fd, RECEIVER); 
 
   closeFd(fd, &oldtio);
 
