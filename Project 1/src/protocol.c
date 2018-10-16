@@ -3,12 +3,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 
 #include "protocol.h"
 #include "utils.h"
 
-#define _POSIX_SOURCE 1 /* POSIX compliant source */
+#define _POSIX_SOURCE /* POSIX compliant source */
 
 bool transmissionFlag = false;
 int transmissionCounter = 0;
@@ -45,12 +46,13 @@ int llopen_receiver(int fd)
     return 0;
 }
 
-int receiveIMessage(int fd)
+unsigned char *receiveIMessage(int fd, int *size)
 {
     state_t state = START;
     int res = 0;
     unsigned char buf;
-    unsigned char *data;
+    unsigned char *data = malloc(MAX_BUF_SIZE);
+    unsigned int i = 0;
     unsigned char C;
     unsigned char COptions[2] = {C_I0, C_I1};
 
@@ -61,12 +63,24 @@ int receiveIMessage(int fd)
         if (res > 0)
             stateMachineIMessage(&state, buf, &C, COptions);
 
-        if (state == BCC1_OK)
+        if (state == BCC1_OK) //TODO: destuffing
         {
+
+            if(buf == ESC){
+
+            }
+
+            data[i++] = buf;
+
+            if (checkBBC2(buf, data, i))
+            {
+                state = BCC2_OK;
+            }
         }
     }
+    *size = i;
 
-    return 1;
+    return data;
 }
 
 int llopen_transmitter(int fd)
@@ -188,6 +202,13 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
 int llread(int fd, char *buffer)
 {
+    int size = 0;
+
+    buffer = receiveIMessage(fd, &size);
+
+    if (buffer == NULL)
+        return -1;
+
     return 0;
 }
 
@@ -344,7 +365,7 @@ int receiveSupervisionMessage(int fd, unsigned char A, unsigned char C)
     while (state != END)
     {
         res = read(fd, &buf, 1);
-
+        printf("buf: 0x%02X\n", buf);
         if (res > 0)
             stateMachineSupervisionMessage(&state, buf, A, &C, COptions);
     }
@@ -397,6 +418,10 @@ int stateMachineIMessage(state_t *state, unsigned char buf, unsigned char *C, un
     case DATA_RCV:
         break;
     case BCC2_OK:
+        if (buf == FLAG)
+            *state = END;
+        else
+            *state = BCC1_OK;
         break;
     case END:
         break;
