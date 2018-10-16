@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <termios.h>
 
 typedef enum
@@ -45,15 +46,35 @@ typedef enum
 #define SUPERVISION_SIZE 5
 #define PORT_SIZE 11
 
-int llopen(int flag, int fd);
+void alarm_handler();
 
-int llopen_receiver(int fd);
+void setUpAlarmHandler();
+
+int llopen(int flag, int fd);
 
 int llopen_transmitter(int fd);
 
+int llopen_receiver(int fd);
+
+void setUpPort(int port, int *fd, struct termios *oldtio);
+
 int llwrite(int fd, unsigned char *buffer, int length);
 
+unsigned char *stuffing(unsigned char *data, int dataSize, int *size);
+
+unsigned char calcBCC2(unsigned char *data, int size);
+
+unsigned char *calcFinalMessage(unsigned char *data, int size, unsigned char C,
+                                unsigned char BCC2);
+
 int llread(int fd, char *buffer);
+
+bool checkBBC2(unsigned char rec_BCC2, unsigned char *data, int size);
+
+unsigned char *receiveIMessage(int fd, int *size);
+
+int stateMachineIMessage(state_t *state, unsigned char buf, unsigned char *C,
+                         unsigned char *COptions);
 
 int llclose(int fd, int flag);
 
@@ -61,23 +82,12 @@ int llclose_receiver(int fd);
 
 int llclose_transmitter(int fd);
 
-unsigned char *calcFinalMessage(unsigned char *data, int size, unsigned char C,
-                                unsigned char BCC2);
-
-void updateMessage(unsigned char *message, unsigned char answer);
-
-unsigned char calcBCC2(unsigned char *data, int size);
-
-unsigned char *stuffing(unsigned char *data, int dataSize, int *size);
-
 int receiveSupervisionMessage(int fd, unsigned char A, unsigned char C);
 
 int sendSupervisionMessage(int fd, unsigned char A, unsigned char C);
 
-void setUpPort(int port, int *fd, struct termios *oldtio);
- 
-int stateMachineSupervisionMessage(state_t *state, unsigned char buf, unsigned char A, unsigned char *C, unsigned char *COptions);
-
-int stateMachineIMessage(state_t *state, unsigned char buf, unsigned char *C, unsigned char *COptions);
+int stateMachineSupervisionMessage(state_t *state, unsigned char buf,
+                                   unsigned char A, unsigned char *C,
+                                   unsigned char *COptions);
 
 void closeFd(int fd, struct termios *oldtio);

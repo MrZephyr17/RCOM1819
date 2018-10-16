@@ -1,25 +1,12 @@
-#include "protocol.h"
-#include "utils.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 
-#define _POSIX_SOURCE 1 /* POSIX compliant source */
-
-volatile int STOP = false;
-
-void readStdin(char *buf) {
-  printf("Write something here...\n");
-
-  if (fgets(buf, 255, stdin) == NULL) {
-    printf("Error reading input!\n");
-    exit(1);
-  }
-}
+#include "protocol.h"
+#include "sender.h"
+#include "utils.h"
 
 int usage(char **argv) {
   printf("Usage: %s <COM> <FILENAME>\n", argv[0]);
@@ -94,7 +81,7 @@ unsigned char *readImageFile(const char *fileName, off_t *size) {
   return data;
 }
 
-unsigned char *getFragment(int seqNum, char *data, int K) {
+unsigned char *getFragment(int seqNum, unsigned char *data, int K) {
   unsigned char *fragment = malloc((4 + K) * sizeof(unsigned char));
 
   fragment[0] = F_C;
@@ -113,7 +100,6 @@ int main(int argc, char **argv) {
   int fd = 0;
   int port = 0;
   struct termios oldtio;
-  char buf[255];
   char filename[MAX_BUF_SIZE];
   unsigned char *fileData;
   off_t fileSize = 0;
@@ -129,21 +115,42 @@ int main(int argc, char **argv) {
 
   setUpPort(port, &fd, &oldtio);
 
-  if (llopen(TRANSMITTER, fd) == -1)
-  {
+  if (llopen(TRANSMITTER, fd) == -1) {
     fprintf(stderr, "llopen error\n");
     exit(-1);
   }
 
-  // unsigned char *start = getDelimPackage(START_C, fileSize, filename,
-  //                                        strlen(filename), &delimSize);
+  unsigned char *start = getDelimPackage(START_C, fileSize, filename,
+                                         strlen(filename), &delimSize);
+
+  llwrite(fd, start, delimSize);
+
+  int K = 260;
+
+  int rest = fileSize % K;
+  int numPackages = fileSize / K;
+
+  unsigned char *fragment;
+
+  int i = 0;
+  for (; i < numPackages; i++) {
+    fragment = getFragment(i, fileData + (K + 1) * i, K);
+    llwrite(fd, fragment, K);
+  }
+
+  if (rest != 0) {
+    fragment = getFragment(i, fileData + (K + 1) * i, rest);
+    llwrite(fd, fragment, rest);
+  }
+
+  unsigned char *end = malloc(delimSize * sizeof(unsigned char));
+  memcpy(end, start, delimSize);
+  end[0] = END_C;
+
+  llwrite(fd, end, delimSize);
 
   // for (int i = 0; i < delimSize; i++)
   //   printf("%d - 0x%02X\n", i, start[i]);
-
-  // unsigned char *end = malloc(delimSize * sizeof(unsigned char));
-  // memcpy(end, start, delimSize);
-  // end[0] = END_C;
 
   // for (int i = 0; i < delimSize; i++)
   //   printf("%d - 0x%02X\n", i, end[i]);
@@ -154,10 +161,6 @@ int main(int argc, char **argv) {
   // free(end);
   // free(fragment);
   // free(fileData);
-
-  // readStdin(buf);
-
-  // writeSentence(fd, buf);
 
   llclose(fd, TRANSMITTER);
 
