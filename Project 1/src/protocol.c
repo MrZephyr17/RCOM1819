@@ -13,6 +13,9 @@ bool transmissionFlag = false;
 int transmissionCounter = 0;
 unsigned char C_I = C_I0;
 
+unsigned int answer_read = 0;
+unsigned int answer_write = 0;
+
 void alarm_handler()
 {
     transmissionFlag = true;
@@ -170,7 +173,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
     free(dataStuffed);
 
     unsigned char *finalMessage =
-        calcFinalMessage(dataStuffed, dataSize, C_I, BCC2);
+        calcFinalMessage(dataStuffed, dataSize, BCC2);
 
     do
     {
@@ -209,7 +212,8 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
     transmissionFlag = false;
     transmissionCounter = 0;
-    C_I = answer == RR0 ? C_I0 : C_I1;
+
+    answer_write ^= 1;
 
     return res;
 }
@@ -258,10 +262,11 @@ unsigned char calcBCC2(unsigned char *data, int size)
     return BCC2;
 }
 
-unsigned char *calcFinalMessage(unsigned char *data, int size, unsigned char C,
+unsigned char *calcFinalMessage(unsigned char *data, int size,
                                 unsigned char BCC2)
 {
     unsigned char *finalMessage = malloc((size + 6) * sizeof(unsigned char));
+    unsigned char C = answer_write == 0 ? C_I0 : C_I1;
 
     finalMessage[0] = FLAG;
     finalMessage[1] = A_03;
@@ -316,16 +321,68 @@ unsigned char *receiveIMessage(int fd, int *size)
     {
         res = read(fd, &buf, 1);
 
-        if (res > 0)
-            stateMachineIMessage(&state, buf, &C, COptions);
+        if(res <= 0)
+            continue;
 
-        if (state == BCC1_OK) // TODO: destuffing
+        switch (state)
         {
-
+        case START:
+            if (buf == FLAG)
+                state = FLAG_RCV;
+            i = 0;
+            data = realloc(data, MAX_BUF_SIZE);
+            break;
+        case FLAG_RCV:
+            if (buf == A_03)
+                state = A_RCV;
+            else if (buf != FLAG)
+                state = START;
+            break;
+        case A_RCV:
+            if (findByteOnArray(buf, COptions))
+            {
+                state = C_RCV;
+                C = buf;
+            }
+            else if (buf == FLAG)
+                state = FLAG_RCV;
+            else if (buf != FLAG)
+                state = START;
+            break;
+        case C_RCV:
+            if (buf == (A_03 ^ C))
+                state = BCC1_OK;
+            else if (buf == FLAG)
+                state = FLAG_RCV;
+            else if (buf != FLAG)
+                state = START;
+            break;
+        case BCC1_OK:
+        {
             if (buf == ESC)
             {
                 wait = true;
                 continue;
+            }
+
+            if (buf == FLAG)
+            {
+                unsigned char bcc2 = data[i - 1];
+                data = realloc(data, i - 1);
+                unsigned char answer;
+                if (checkBBC2(bcc2, data, i - 1) && answer_read == answer_write)
+                {
+                    state = END;
+
+                    answer = answer_read == 0 ? RR1 : RR0;
+                    sendSupervisionMessage(fd, A_03, answer);
+                    answer_read ^= 1;
+                }
+                else
+                {
+                    state = START;
+                    sendSupervisionMessage(fd, A_03, answer_read);
+                }
             }
 
             if (wait)
@@ -339,14 +396,25 @@ unsigned char *receiveIMessage(int fd, int *size)
             }
             else
                 data[i++] = buf;
-
-            if (checkBBC2(buf, data, i))
-            {
-                state = BCC2_OK;
-            }
+        }
+        break;
+        case DATA_RCV:
+            break;
+        case BCC2_OK:
+            if (buf == FLAG)
+                state = END;
+            else
+                state = BCC1_OK;
+            break;
+        case END:
+            break;
+        default:
+            fprintf(stderr, "Invalid state\n");
+            return NULL;
         }
     }
-    *size = i;
+
+    *size = i - 1;
 
     return data;
 }

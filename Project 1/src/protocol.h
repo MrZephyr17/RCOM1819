@@ -64,7 +64,7 @@ unsigned char *stuffing(unsigned char *data, int dataSize, int *size);
 
 unsigned char calcBCC2(unsigned char *data, int size);
 
-unsigned char *calcFinalMessage(unsigned char *data, int size, unsigned char C,
+unsigned char *calcFinalMessage(unsigned char *data, int size,
                                 unsigned char BCC2);
 
 int llread(int fd, char *buffer);
