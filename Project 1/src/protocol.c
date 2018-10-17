@@ -13,8 +13,8 @@ bool transmissionFlag = false;
 int transmissionCounter = 0;
 unsigned char C_I = C_I0;
 
-unsigned int answer_read = 0;
-unsigned int answer_write = 0;
+int answer_read = 0;
+int answer_write = 0;
 
 void alarm_handler()
 {
@@ -169,11 +169,10 @@ int llwrite(int fd, unsigned char *buffer, int length)
     unsigned char answer = 0;
     unsigned char BCC2 = calcBCC2(buffer, length);
     unsigned char *dataStuffed = stuffing(buffer, length, &dataSize);
-
-    free(dataStuffed);
-
     unsigned char *finalMessage =
         calcFinalMessage(dataStuffed, dataSize, BCC2);
+
+    free(dataStuffed);
 
     do
     {
@@ -192,9 +191,13 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
             if (state == END)
             {
-                alarm(0);
-                received = true;
-                debug_print("Received RR\n");
+                if ((answer_write == 0 && answer == RR1) || (answer_write == 1 && answer == RR0))
+                {
+                    alarm(0);
+                    received = true;
+                    debug_print("Received RR\n");
+                    answer_write ^= 1;
+                }
             }
             else if (state == C_RCV && (answer == REJ0 || answer == REJ1))
             {
@@ -212,8 +215,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
     transmissionFlag = false;
     transmissionCounter = 0;
-
-    answer_write ^= 1;
 
     return res;
 }
@@ -289,9 +290,10 @@ unsigned char *calcFinalMessage(unsigned char *data, int size,
 int llread(int fd, char *buffer)
 {
     int size = 0;
+    unsigned char *message = receiveIMessage(fd, &size);
 
-    memcpy(receiveIMessage(fd, &size), buffer, size);
-
+    memcpy(buffer, message, size);
+    free(message);
     if (buffer == NULL)
         return -1;
 
@@ -313,15 +315,17 @@ unsigned char *receiveIMessage(int fd, int *size)
     unsigned char buf;
     unsigned char *data = malloc(MAX_BUF_SIZE);
     unsigned int i = 0;
+    int received = 0;
     unsigned char C;
     unsigned char COptions[2] = {C_I0, C_I1};
     bool wait = false;
+    bool sendData = false;
 
     while (state != END)
     {
         res = read(fd, &buf, 1);
 
-        if(res <= 0)
+        if (res <= 0)
             continue;
 
         switch (state)
@@ -343,6 +347,15 @@ unsigned char *receiveIMessage(int fd, int *size)
             {
                 state = C_RCV;
                 C = buf;
+
+                if (C == C_I0)
+                {
+                    received = 0;
+                }
+                else if (C == C_I1)
+                {
+                    received = 1;
+                }
             }
             else if (buf == FLAG)
                 state = FLAG_RCV;
@@ -369,19 +382,24 @@ unsigned char *receiveIMessage(int fd, int *size)
             {
                 unsigned char bcc2 = data[i - 1];
                 data = realloc(data, i - 1);
+
                 unsigned char answer;
+                debug_print("%d %d\n", answer_read, answer_write);
                 if (checkBBC2(bcc2, data, i - 1) && answer_read == answer_write)
                 {
                     state = END;
 
-                    answer = answer_read == 0 ? RR1 : RR0;
+                    answer = received == 0 ? RR1 : RR0;
                     sendSupervisionMessage(fd, A_03, answer);
-                    answer_read ^= 1;
+                    debug_print("Sent 0x%02X\n", answer);
+                    sendData = true;
                 }
                 else
                 {
                     state = START;
-                    sendSupervisionMessage(fd, A_03, answer_read);
+                    answer = received == 0 ? REJ1 : REJ0;
+                    sendSupervisionMessage(fd, A_03, answer);
+                    sendData = false;
                 }
             }
 
@@ -413,6 +431,9 @@ unsigned char *receiveIMessage(int fd, int *size)
             return NULL;
         }
     }
+
+    if (sendData && answer_read == received)
+        answer_read ^= 1;
 
     *size = i - 1;
 
@@ -560,7 +581,7 @@ int receiveSupervisionMessage(int fd, unsigned char A, unsigned char C)
     while (state != END)
     {
         res = read(fd, &buf, 1);
-        printf("buf: 0x%02X\n", buf);
+
         if (res > 0)
             stateMachineSupervisionMessage(&state, buf, A, &C, COptions);
     }
