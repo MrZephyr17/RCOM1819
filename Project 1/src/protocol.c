@@ -189,15 +189,11 @@ int llwrite(int fd, unsigned char *buffer, int length)
             if (res > 0)
                 stateMachineSupervisionMessage(&state, buf, A_03, &answer, COptions);
 
-            if (state == END)
+            if (state == END && ((answer_write == 1 && answer == RR0) || (answer_write == 0 && answer == RR1)))
             {
-                if ((answer_write == 0 && answer == RR1) || (answer_write == 1 && answer == RR0))
-                {
-                    alarm(0);
-                    received = true;
-                    debug_print("Received RR\n");
-                    answer_write ^= 1;
-                }
+                alarm(0);
+                received = true;
+                debug_print("Received RR\n");
             }
             else if (state == C_RCV && (answer == REJ0 || answer == REJ1))
             {
@@ -215,6 +211,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
     transmissionFlag = false;
     transmissionCounter = 0;
+    answer_write ^= 1;
 
     return res;
 }
@@ -287,7 +284,7 @@ unsigned char *calcFinalMessage(unsigned char *data, int size,
     return finalMessage;
 }
 
-int llread(int fd, char *buffer)
+int llread(int fd, unsigned char *buffer)
 {
     int size = 0;
     unsigned char *message = receiveIMessage(fd, &size);
@@ -315,11 +312,9 @@ unsigned char *receiveIMessage(int fd, int *size)
     unsigned char buf;
     unsigned char *data = malloc(MAX_BUF_SIZE);
     unsigned int i = 0;
-    int received = 0;
     unsigned char C;
     unsigned char COptions[2] = {C_I0, C_I1};
     bool wait = false;
-    bool sendData = false;
 
     while (state != END)
     {
@@ -335,6 +330,7 @@ unsigned char *receiveIMessage(int fd, int *size)
                 state = FLAG_RCV;
             i = 0;
             data = realloc(data, MAX_BUF_SIZE);
+
             break;
         case FLAG_RCV:
             if (buf == A_03)
@@ -347,15 +343,6 @@ unsigned char *receiveIMessage(int fd, int *size)
             {
                 state = C_RCV;
                 C = buf;
-
-                if (C == C_I0)
-                {
-                    received = 0;
-                }
-                else if (C == C_I1)
-                {
-                    received = 1;
-                }
             }
             else if (buf == FLAG)
                 state = FLAG_RCV;
@@ -384,22 +371,19 @@ unsigned char *receiveIMessage(int fd, int *size)
                 data = realloc(data, i - 1);
 
                 unsigned char answer;
-                debug_print("%d %d\n", answer_read, answer_write);
-                if (checkBBC2(bcc2, data, i - 1) && answer_read == answer_write)
+                if (checkBBC2(bcc2, data, i - 1))
                 {
                     state = END;
 
-                    answer = received == 0 ? RR1 : RR0;
+                    answer = answer_read == 0 ? RR1 : RR0;
                     sendSupervisionMessage(fd, A_03, answer);
                     debug_print("Sent 0x%02X\n", answer);
-                    sendData = true;
                 }
                 else
                 {
                     state = START;
-                    answer = received == 0 ? REJ1 : REJ0;
+                    answer = answer_read == 0 ? REJ1 : REJ0;
                     sendSupervisionMessage(fd, A_03, answer);
-                    sendData = false;
                 }
             }
 
@@ -432,10 +416,8 @@ unsigned char *receiveIMessage(int fd, int *size)
         }
     }
 
-    if (sendData && answer_read == received)
-        answer_read ^= 1;
-
     *size = i - 1;
+    answer_read ^= 1;
 
     return data;
 }

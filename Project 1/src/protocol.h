@@ -67,7 +67,7 @@ unsigned char calcBCC2(unsigned char *data, int size);
 unsigned char *calcFinalMessage(unsigned char *data, int size,
                                 unsigned char BCC2);
 
-int llread(int fd, char *buffer);
+int llread(int fd, unsigned char *buffer);
 
 bool checkBBC2(unsigned char rec_BCC2, unsigned char *data, int size);
 

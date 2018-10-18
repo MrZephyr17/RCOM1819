@@ -4,4 +4,4 @@
 
 int usage(char **argv);
 
-bool handleData(char *data);
+bool handleData(unsigned char *data, FILE *file);
