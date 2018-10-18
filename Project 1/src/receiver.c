@@ -14,7 +14,7 @@ int usage(char **argv)
   return 1;
 }
 
-void handleStart(unsigned char *data, unsigned char* filename)
+void handleStart(unsigned char *data, unsigned char *filename)
 {
   unsigned char T = data[1];
   unsigned char size = data[2];
@@ -39,37 +39,35 @@ bool handleData(unsigned char *data, FILE *file)
   if (C == F_C)
   {
     int K = 256 * data[3] + data[2];
-    
+
     fwrite(data + 4, 1, K, file);
   }
-  else if (C == END_C)
-  {
-    return true;
-  }
 
-  return false;
+  return C == END_C;
 }
 
-void normal(int fd, unsigned char* buffer)
+void normal(int fd, unsigned char *buffer)
 {
   FILE *file;
   unsigned char filename[MAX_BUF_SIZE];
   bool end = false;
-
+  int size = 0;
   llread(fd, buffer);
 
   handleStart(buffer, filename);
-  file = fopen("copy.gif", "wb+");
+  file = fopen("copy", "wb+");
 
   while (!end)
   {
-    llread(fd, buffer);
+    size = llread(fd, buffer);
+
+    printf("\n\n");
+
     end = handleData(buffer, file);
   }
 
   fclose(file);
 }
-
 
 int main(int argc, char **argv)
 {
@@ -86,10 +84,12 @@ int main(int argc, char **argv)
 
   llopen(RECEIVER, fd);
 
-  llread(fd, buffer);
+  normal(fd, buffer);
 
-  for (int i = 0; i < 10 + 4; i++)
-    printf("0x%02X\n", buffer[i]);
+  // llread(fd, buffer);
+
+  // for (int i = 4; i < 10 + 4; i++)
+  //   printf("0x%02X\n", buffer[i]);
 
   llclose(fd, RECEIVER);
 

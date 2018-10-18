@@ -66,7 +66,7 @@ unsigned char *readImageFile(const char *fileName, off_t *size)
   FILE *file;
   struct stat info;
 
-  if ((file = fopen(fileName, "rb")) == NULL)
+  if ((file = fopen(fileName, "rb+")) == NULL)
   {
     perror("fopen");
     exit(1);
@@ -178,14 +178,11 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
- // normal(fd, fileSize, filename);
+   normal(fd,filename);
 
-  unsigned char *fragment = getFragment(0, "asdfghjkl", 10);
+  // unsigned char *fragment = getFragment(0, "asdfghjkl", 10);
 
-  for (int i = 0; i < 10 + 4; i++)
-    printf("0x%02X\n", fragment[i]);
-
-  llwrite(fd, fragment, 10);
+  // llwrite(fd, fragment, 10+4);
 
   llclose(fd, TRANSMITTER);
 
