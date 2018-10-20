@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 
-#define MAX_BUF_SIZE 255
+#define MAX_BUF_SIZE 400
 
 #ifdef DEBUG
 #define DEBUG_TEST 1

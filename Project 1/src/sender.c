@@ -60,7 +60,7 @@ unsigned char *getDelimPackage(unsigned char C, int fileLength, char *fileName,
   return delim;
 }
 
-unsigned char *readImageFile(const char *fileName, off_t *size)
+unsigned char *readFile(const char *fileName, off_t *size)
 {
   unsigned char *data;
   FILE *file;
@@ -98,19 +98,16 @@ unsigned char *getFragment(int seqNum, unsigned char *data, int K)
   fragment[3] = K / 256;
   memcpy(fragment + 4, data, K);
 
-  // for (int i = 0; i < K + 4; i++)
-  //   printf("0x%02X\n", fragment[i]);
-
   return fragment;
 }
 
-void normal(int fd, char* filename)
+void writeFile(int fd, char *filename)
 {
   unsigned char *fileData;
   off_t fileSize = 0;
   int delimSize = 0;
 
-  fileData = readImageFile(filename, &fileSize);
+  fileData = readFile(filename, &fileSize);
 
   unsigned char *start = getDelimPackage(START_C, fileSize, filename,
                                          strlen(filename), &delimSize);
@@ -129,13 +126,13 @@ void normal(int fd, char* filename)
   {
     fragment = getFragment(i, fileData + (K + 1) * i, K);
 
-    llwrite(fd, fragment, K);
+    llwrite(fd, fragment, K + 4);
   }
 
   if (rest != 0)
   {
     fragment = getFragment(i, fileData + (K + 1) * i, rest);
-    llwrite(fd, fragment, rest);
+    llwrite(fd, fragment, rest + 4);
   }
 
   unsigned char *end = malloc(delimSize * sizeof(unsigned char));
@@ -143,12 +140,6 @@ void normal(int fd, char* filename)
   end[0] = END_C;
 
   llwrite(fd, end, delimSize);
-
-  // for (int i = 0; i < delimSize; i++)
-  //   printf("%d - 0x%02X\n", i, start[i]);
-
-  // for (int i = 0; i < delimSize; i++)
-  //   printf("%d - 0x%02X\n", i, end[i]);
 
   free(start);
   free(end);
@@ -159,18 +150,13 @@ void normal(int fd, char* filename)
 int main(int argc, char **argv)
 {
   int fd = 0;
-  int port = 0;
   struct termios oldtio;
-  char filename[MAX_BUF_SIZE];
 
   if ((argc != 3) ||
       ((strcmp("0", argv[1]) != 0) && (strcmp("1", argv[1]) != 0)))
     usage(argv);
 
-  port = atoi(argv[1]);
-  strcpy(filename, argv[2]);
-
-  setUpPort(port, &fd, &oldtio);
+  setUpPort(atoi(argv[1]), &fd, &oldtio);
 
   if (llopen(TRANSMITTER, fd) == -1)
   {
@@ -178,11 +164,7 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
-   normal(fd,filename);
-
-  // unsigned char *fragment = getFragment(0, "asdfghjkl", 10);
-
-  // llwrite(fd, fragment, 10+4);
+  writeFile(fd, argv[2]);
 
   llclose(fd, TRANSMITTER);
 

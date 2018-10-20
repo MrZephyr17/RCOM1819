@@ -169,21 +169,10 @@ int llwrite(int fd, unsigned char *buffer, int length)
     unsigned char answer = 0;
     unsigned char BCC2 = calcBCC2(buffer, length);
 
-    // for (int i = 0; i < length; i++)
-    //     printf("buffer: 0x%02X\n", buffer[i]);
-
     unsigned char *dataStuffed = stuffing(buffer, length, &dataSize);
-
-    // for (int i = 0; i < dataSize; i++)
-    //   printf("dataStuffed: 0x%02X\n", dataStuffed[i]);
 
     unsigned char *finalMessage =
         calcFinalMessage(dataStuffed, dataSize, BCC2);
-
-    for (int i = 0; i < dataSize + 6; i++)
-        printf("final: 0x%02X\n", finalMessage[i]);
-
-    printf("\n\n");
 
     free(dataStuffed);
 
@@ -562,6 +551,8 @@ int llclose_transmitter(int fd)
     transmissionCounter = 0;
 
     sendSupervisionMessage(fd, A_01, UA_C);
+
+    sleep(1);
 
     return 0;
 }

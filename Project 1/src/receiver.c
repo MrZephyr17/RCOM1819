@@ -46,22 +46,28 @@ bool handleData(unsigned char *data, FILE *file)
   return C == END_C;
 }
 
-void normal(int fd, unsigned char *buffer)
+void readFile(int fd)
 {
   FILE *file;
   unsigned char filename[MAX_BUF_SIZE];
+  unsigned char buffer[MAX_BUF_SIZE];
   bool end = false;
   int size = 0;
-  llread(fd, buffer);
 
+  llread(fd, buffer);
   handleStart(buffer, filename);
-  file = fopen("copy", "wb+");
+  
+  file = fopen("copy.gif" /*filename*/, "wb+");
 
   while (!end)
   {
     size = llread(fd, buffer);
 
-    printf("\n\n");
+    if (size <= 0)
+    {
+      debug_print("llread error\n");
+      continue;
+    }
 
     end = handleData(buffer, file);
   }
@@ -71,25 +77,17 @@ void normal(int fd, unsigned char *buffer)
 
 int main(int argc, char **argv)
 {
-  int fd = 0, port = 0;
+  int fd = 0;
   struct termios oldtio;
-  unsigned char buffer[400];
 
   if (argc != 2 || ((strcmp("0", argv[1]) != 0) && (strcmp("1", argv[1]) != 0)))
     return usage(argv);
 
-  port = atoi(argv[1]);
-
-  setUpPort(port, &fd, &oldtio);
+  setUpPort(atoi(argv[1]), &fd, &oldtio);
 
   llopen(RECEIVER, fd);
 
-  normal(fd, buffer);
-
-  // llread(fd, buffer);
-
-  // for (int i = 4; i < 10 + 4; i++)
-  //   printf("0x%02X\n", buffer[i]);
+  readFile(fd);
 
   llclose(fd, RECEIVER);
 
