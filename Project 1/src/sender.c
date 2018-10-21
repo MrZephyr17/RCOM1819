@@ -112,34 +112,48 @@ void writeFile(int fd, char *filename)
   unsigned char *start = getDelimPackage(START_C, fileSize, filename,
                                          strlen(filename), &delimSize);
 
-  llwrite(fd, start, delimSize);
+  if (llwrite(fd, start, delimSize) <= 0)
+  {
+    fprintf(stderr, "llwrite error\n");
+    exit(-1);
+  }
 
-  int K = 260;
-
-  int rest = fileSize % K;
-  int numPackages = fileSize / K;
+  int rest = fileSize % FRAG_K;
+  int numPackages = fileSize / FRAG_K;
 
   unsigned char *fragment;
 
   int i = 0;
   for (; i < numPackages; i++)
   {
-    fragment = getFragment(i, fileData + (K + 1) * i, K);
+    fragment = getFragment(i, fileData + FRAG_K * i, FRAG_K);
 
-    llwrite(fd, fragment, K + 4);
+    if (llwrite(fd, fragment, FRAG_K + 4) <= 0)
+    {
+      fprintf(stderr, "llwrite error\n");
+      exit(-1);
+    }
   }
 
   if (rest != 0)
   {
-    fragment = getFragment(i, fileData + (K + 1) * i, rest);
-    llwrite(fd, fragment, rest + 4);
+    fragment = getFragment(i, fileData + FRAG_K * i, rest);
+    if (llwrite(fd, fragment, rest + 4) <= 0)
+    {
+      fprintf(stderr, "llwrite error\n");
+      exit(-1);
+    }
   }
 
   unsigned char *end = malloc(delimSize * sizeof(unsigned char));
   memcpy(end, start, delimSize);
   end[0] = END_C;
 
-  llwrite(fd, end, delimSize);
+  if (llwrite(fd, end, delimSize) <= 0)
+  {
+    fprintf(stderr, "llwrite error\n");
+    exit(-1);
+  }
 
   free(start);
   free(end);
@@ -158,7 +172,7 @@ int main(int argc, char **argv)
 
   setUpPort(atoi(argv[1]), &fd, &oldtio);
 
-  if (llopen(TRANSMITTER, fd) == -1)
+  if (llopen(TRANSMITTER, fd) != 0)
   {
     fprintf(stderr, "llopen error\n");
     exit(-1);
@@ -166,7 +180,11 @@ int main(int argc, char **argv)
 
   writeFile(fd, argv[2]);
 
-  llclose(fd, TRANSMITTER);
+  if (llclose(fd, TRANSMITTER) != 0)
+  {
+    fprintf(stderr, "llclose error\n");
+    exit(-1);
+  }
 
   closeFd(fd, &oldtio);
 

@@ -11,7 +11,6 @@
 
 bool transmissionFlag = false;
 int transmissionCounter = 0;
-unsigned char C_I = C_I0;
 
 int answer_read = 0;
 int answer_write = 0;
@@ -54,11 +53,10 @@ int llopen(int flag, int fd)
 int llopen_transmitter(int fd)
 {
     bool received = false;
-
-    setUpAlarmHandler();
-
     unsigned char buf, C;
     unsigned char COptions[1] = {UA_C};
+
+    setUpAlarmHandler();
 
     do
     {
@@ -100,9 +98,11 @@ int llopen_receiver(int fd)
         debug_print("Received SET_C\n");
 
         sendSupervisionMessage(fd, A_03, UA_C);
+
+        return 0;
     }
 
-    return 0;
+    return -1;
 }
 
 void setUpPort(int port, int *fd, struct termios *oldtio)
@@ -142,9 +142,9 @@ void setUpPort(int port, int *fd, struct termios *oldtio)
     newtio.c_cc[VMIN] = 0;  /* blocking read until 5 chars received */
 
     /*
-VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
-leitura do(s) pr�ximo(s) caracter(es)
-*/
+    VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
+    leitura do(s) proximo(s) caracter(es)
+    */
 
     tcflush(*fd, TCIOFLUSH);
 
@@ -159,7 +159,6 @@ leitura do(s) pr�ximo(s) caracter(es)
     debug_print("New termios structure set\n");
 }
 
-// TODO: answer
 int llwrite(int fd, unsigned char *buffer, int length)
 {
     int dataSize = 0, res = 0;
@@ -171,8 +170,7 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
     unsigned char *dataStuffed = stuffing(buffer, length, &dataSize);
 
-    unsigned char *finalMessage =
-        calcFinalMessage(dataStuffed, dataSize, BCC2);
+    unsigned char *finalMessage = calcFinalMessage(dataStuffed, dataSize, BCC2);
 
     free(dataStuffed);
 
@@ -181,17 +179,18 @@ int llwrite(int fd, unsigned char *buffer, int length)
         res = write(fd, finalMessage, dataSize + 6);
         alarm(TIME_OUT);
         transmissionFlag = false;
-        int res = 0;
+        int nRead = 0;
         state_t state = START;
 
         while (!received && !transmissionFlag)
         {
-            res = read(fd, &buf, 1);
+            nRead = read(fd, &buf, 1);
 
-            if (res > 0)
+            if (nRead > 0)
                 stateMachineSupervisionMessage(&state, buf, A_03, &answer, COptions);
 
-            if (state == END && ((answer_write == 1 && answer == RR0) || (answer_write == 0 && answer == RR1)))
+            if (state == END && ((answer_write == 1 && answer == RR0) ||
+                                 (answer_write == 0 && answer == RR1)))
             {
                 alarm(0);
                 received = true;
@@ -291,10 +290,11 @@ int llread(int fd, unsigned char *buffer)
     int size = 0;
     unsigned char *message = receiveIMessage(fd, &size);
 
+    if (message == NULL || size <= 0)
+        return -1;
+
     memcpy(buffer, message, size);
     free(message);
-    if (buffer == NULL)
-        return -1;
 
     return size;
 }
@@ -306,14 +306,56 @@ bool checkBBC2(unsigned char rec_BCC2, unsigned char *data, int size)
     return rec_BCC2 == exp_BCC2;
 }
 
-// TODO: como sabemos o tamanho do pacote pra ler o BCC2?
+void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t *state, bool *wait)
+{
+    if (buf == ESC)
+    {
+        *wait = true;
+        return;
+    }
+
+    if (buf == FLAG)
+    {
+        unsigned char bcc2 = data[*i - 1];
+        data = realloc(data, *i - 2);
+
+        unsigned char answer;
+        if (checkBBC2(bcc2, data, *i - 1))
+        {
+            *state = END;
+
+            answer = answer_read == 0 ? RR1 : RR0;
+            sendSupervisionMessage(fd, A_03, answer);
+            debug_print("Sent 0x%02X\n", answer);
+        }
+        else
+        {
+            *state = START;
+            answer = answer_read == 0 ? REJ1 : REJ0;
+            sendSupervisionMessage(fd, A_03, answer);
+        }
+    }
+
+    if (*wait)
+    {
+        if (buf == ESC_2)
+            data[(*i)++] = FLAG;
+        else if (buf == ESC_3)
+            data[(*i)++] = ESC;
+
+        *wait = false;
+    }
+    else
+        data[(*i)++] = buf;
+}
+
 unsigned char *receiveIMessage(int fd, int *size)
 {
     state_t state = START;
     int res = 0;
     unsigned char buf;
     unsigned char *data = malloc(MAX_BUF_SIZE);
-    unsigned int i = 0;
+    int i = 0;
     unsigned char C;
     unsigned char COptions[2] = {C_I0, C_I1};
     bool wait = false;
@@ -332,7 +374,6 @@ unsigned char *receiveIMessage(int fd, int *size)
                 state = FLAG_RCV;
             i = 0;
             data = realloc(data, MAX_BUF_SIZE);
-
             break;
         case FLAG_RCV:
             if (buf == A_03)
@@ -360,49 +401,7 @@ unsigned char *receiveIMessage(int fd, int *size)
                 state = START;
             break;
         case BCC1_OK:
-        {
-            if (buf == ESC)
-            {
-                wait = true;
-                continue;
-            }
-
-            if (buf == FLAG)
-            {
-                unsigned char bcc2 = data[i - 1];
-                data = realloc(data, i - 2);
-
-                unsigned char answer;
-                if (checkBBC2(bcc2, data, i - 1))
-                {
-                    state = END;
-
-                    answer = answer_read == 0 ? RR1 : RR0;
-                    sendSupervisionMessage(fd, A_03, answer);
-                    debug_print("Sent 0x%02X\n", answer);
-                }
-                else
-                {
-                    state = START;
-                    answer = answer_read == 0 ? REJ1 : REJ0;
-                    sendSupervisionMessage(fd, A_03, answer);
-                }
-            }
-
-            if (wait)
-            {
-                if (buf == ESC_2)
-                    data[i++] = FLAG;
-                else if (buf == ESC_3)
-                    data[i++] = ESC;
-
-                wait = false;
-            }
-            else
-                data[i++] = buf;
-        }
-        break;
-        case DATA_RCV:
+            receiveData(fd, buf, data, &i, &state, &wait);
             break;
         case BCC2_OK:
             if (buf == FLAG)
@@ -422,60 +421,6 @@ unsigned char *receiveIMessage(int fd, int *size)
     answer_read ^= 1;
 
     return data;
-}
-
-int stateMachineIMessage(state_t *state, unsigned char buf, unsigned char *C,
-                         unsigned char *COptions)
-{
-    switch (*state)
-    {
-    case START:
-        if (buf == FLAG)
-            *state = FLAG_RCV;
-        break;
-    case FLAG_RCV:
-        if (buf == A_03)
-            *state = A_RCV;
-        else if (buf != FLAG)
-            *state = START;
-        break;
-    case A_RCV:
-        if (findByteOnArray(buf, COptions))
-        {
-            *state = C_RCV;
-            *C = buf;
-        }
-        else if (buf == FLAG)
-            *state = FLAG_RCV;
-        else if (buf != FLAG)
-            *state = START;
-        break;
-    case C_RCV:
-        if (buf == (A_03 ^ *C))
-            *state = BCC1_OK;
-        else if (buf == FLAG)
-            *state = FLAG_RCV;
-        else if (buf != FLAG)
-            *state = START;
-        break;
-    case BCC1_OK:
-        break;
-    case DATA_RCV:
-        break;
-    case BCC2_OK:
-        if (buf == FLAG)
-            *state = END;
-        else
-            *state = BCC1_OK;
-        break;
-    case END:
-        break;
-    default:
-        fprintf(stderr, "Invalid state\n");
-        return -1;
-    }
-
-    return 0;
 }
 
 int llclose(int fd, int flag)
@@ -501,22 +446,21 @@ int llclose_receiver(int fd)
         debug_print("Received DISC\n");
 
         sendSupervisionMessage(fd, A_01, DISC);
+
+        if (receiveSupervisionMessage(fd, A_01, UA_C))
+        {
+            debug_print("Received UA_C\n");
+        }
+
+        return 0;
     }
 
-    if (receiveSupervisionMessage(fd, A_01, UA_C))
-    {
-        debug_print("Received UA_C\n");
-    }
-
-    return 0;
+    return -1;
 }
 
 int llclose_transmitter(int fd)
 {
     bool received = false;
-
-    setUpAlarmHandler();
-
     unsigned char buf, C;
     unsigned char COptions[1] = {DISC};
 

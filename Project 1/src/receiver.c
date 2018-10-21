@@ -54,9 +54,15 @@ void readFile(int fd)
   bool end = false;
   int size = 0;
 
-  llread(fd, buffer);
+  if (llread(fd, buffer) <= 0)
+  {
+    fprintf(stderr, "llread error\n");
+    exit(-1);
+  }
+  
   handleStart(buffer, filename);
   
+  // TODO: filename
   file = fopen("copy.gif" /*filename*/, "wb+");
 
   while (!end)
@@ -85,11 +91,19 @@ int main(int argc, char **argv)
 
   setUpPort(atoi(argv[1]), &fd, &oldtio);
 
-  llopen(RECEIVER, fd);
+  if (llopen(RECEIVER, fd) != 0)
+  {
+    fprintf(stderr, "llopen error\n");
+    exit(-1);
+  }
 
   readFile(fd);
 
-  llclose(fd, RECEIVER);
+  if (llclose(fd, RECEIVER) != 0)
+  {
+    fprintf(stderr, "llclose error\n");
+    exit(-1);
+  }
 
   closeFd(fd, &oldtio);
 
