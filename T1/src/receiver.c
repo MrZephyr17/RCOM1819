@@ -49,25 +49,26 @@ bool handleData(unsigned char *data, FILE *file)
 void readFile(int fd)
 {
   FILE *file;
-  unsigned char filename[MAX_BUF_SIZE];
-  unsigned char buffer[MAX_BUF_SIZE];
+  unsigned char filename[MAX_BUF_SIZE+4];
+  unsigned char fragment[264];
+  unsigned char delim[21];
   bool end = false;
   int size = 0;
 
-  if (llread(fd, buffer) <= 0)
+  if (llread(fd, delim) <= 0)
   {
     fprintf(stderr, "llread error\n");
     exit(-1);
   }
   
-  handleStart(buffer, filename);
+  handleStart(delim, filename);
   
   // TODO: filename
   file = fopen("copy.gif" /*filename*/, "wb+");
 
   while (!end)
   {
-    size = llread(fd, buffer);
+    size = llread(fd, fragment);
 
     if (size <= 0)
     {
@@ -75,7 +76,7 @@ void readFile(int fd)
       continue;
     }
 
-    end = handleData(buffer, file);
+    end = handleData(fragment, file);
   }
 
   fclose(file);

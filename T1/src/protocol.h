@@ -171,7 +171,7 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
  * @param size 
  * @return unsigned char* 
  */
-unsigned char *receiveIMessage(int fd, int *size);
+void receiveIMessage(int fd, int *size, unsigned char* data);
 
 
 /**

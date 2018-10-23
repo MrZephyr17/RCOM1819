@@ -288,13 +288,13 @@ unsigned char *calcFinalMessage(unsigned char *data, int size,
 int llread(int fd, unsigned char *buffer)
 {
     int size = 0;
-    unsigned char *message = receiveIMessage(fd, &size);
 
-    if (message == NULL || size <= 0)
+    receiveIMessage(fd, &size, buffer);
+
+    if (buffer == NULL || size <= 0)
         return -1;
 
-    memcpy(buffer, message, size);
-    free(message);
+    printf("SIZE==> %d\n\n\n\n", size);
 
     return size;
 }
@@ -317,7 +317,6 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
     if (buf == FLAG)
     {
         unsigned char bcc2 = data[*i - 1];
-        data = realloc(data, *i - 2);
 
         unsigned char answer;
         if (checkBBC2(bcc2, data, *i - 1))
@@ -326,7 +325,6 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
 
             answer = answer_read == 0 ? RR1 : RR0;
             sendSupervisionMessage(fd, A_03, answer);
-            debug_print("Sent 0x%02X\n", answer);
         }
         else
         {
@@ -334,6 +332,8 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
             answer = answer_read == 0 ? REJ1 : REJ0;
             sendSupervisionMessage(fd, A_03, answer);
         }
+
+        debug_print("Sent 0x%02X\n", answer);
     }
 
     if (*wait)
@@ -349,12 +349,11 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
         data[(*i)++] = buf;
 }
 
-unsigned char *receiveIMessage(int fd, int *size)
+void receiveIMessage(int fd, int *size, unsigned char *data)
 {
     state_t state = START;
     int res = 0;
     unsigned char buf;
-    unsigned char *data = malloc(MAX_BUF_SIZE);
     int i = 0;
     unsigned char C;
     unsigned char COptions[2] = {C_I0, C_I1};
@@ -373,7 +372,6 @@ unsigned char *receiveIMessage(int fd, int *size)
             if (buf == FLAG)
                 state = FLAG_RCV;
             i = 0;
-            data = realloc(data, MAX_BUF_SIZE);
             break;
         case FLAG_RCV:
             if (buf == A_03)
@@ -413,14 +411,12 @@ unsigned char *receiveIMessage(int fd, int *size)
             break;
         default:
             fprintf(stderr, "Invalid state\n");
-            return NULL;
+            return;
         }
     }
 
     *size = i - 2;
     answer_read ^= 1;
-
-    return data;
 }
 
 int llclose(int fd, int flag)
