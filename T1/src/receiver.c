@@ -63,8 +63,7 @@ void readFile(int fd)
   
   handleStart(delim, filename);
   
-  // TODO: filename
-  file = fopen("copy.gif" /*filename*/, "wb+");
+  file = fopen(filename, "wb+");
 
   while (!end)
   {

@@ -195,10 +195,12 @@ int llwrite(int fd, unsigned char *buffer, int length)
                 alarm(0);
                 received = true;
                 debug_print("Received RR\n");
+                answer_write ^= 1;
             }
             else if (state == C_RCV && (answer == REJ0 || answer == REJ1))
             {
                 transmissionCounter++;
+                debug_print("Received REJ\n");
                 transmissionFlag = true;
                 alarm(0);
             }
@@ -212,7 +214,6 @@ int llwrite(int fd, unsigned char *buffer, int length)
 
     transmissionFlag = false;
     transmissionCounter = 0;
-    answer_write ^= 1;
 
     return res;
 }
@@ -293,8 +294,6 @@ int llread(int fd, unsigned char *buffer)
 
     if (buffer == NULL || size <= 0)
         return -1;
-
-    printf("SIZE==> %d\n\n\n\n", size);
 
     return size;
 }
