@@ -63,7 +63,7 @@ void readFile(int fd)
   
   handleStart(delim, filename);
   
-  file = fopen(filename, "wb+");
+  file = fopen((char*)filename, "wb+");
 
   while (!end)
   {

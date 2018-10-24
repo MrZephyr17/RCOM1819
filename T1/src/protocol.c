@@ -12,8 +12,7 @@
 bool transmissionFlag = false;
 int transmissionCounter = 0;
 
-int answer_read = 0;
-int answer_write = 0;
+int flag = 0; 
 
 void alarm_handler()
 {
@@ -189,20 +188,19 @@ int llwrite(int fd, unsigned char *buffer, int length)
             if (nRead > 0)
                 stateMachineSupervisionMessage(&state, buf, A_03, &answer, COptions);
 
-            if (state == END && ((answer_write == 1 && answer == RR0) ||
-                                 (answer_write == 0 && answer == RR1)))
+            if (state == END && ((flag == 1 && answer == RR0) ||
+                                 (flag == 0 && answer == RR1)))
             {
-                alarm(0);
                 received = true;
                 debug_print("Received RR\n");
-                answer_write ^= 1;
+                alarm(0);
+                flag ^= 1;
             }
             else if (state == C_RCV && (answer == REJ0 || answer == REJ1))
             {
-                transmissionCounter++;
                 debug_print("Received REJ\n");
-                transmissionFlag = true;
                 alarm(0);
+                transmissionFlag = true;
             }
         }
     } while (transmissionFlag && transmissionCounter < MAX_RETRY_NUMBER);
@@ -266,7 +264,7 @@ unsigned char *calcFinalMessage(unsigned char *data, int size,
                                 unsigned char BCC2)
 {
     unsigned char *finalMessage = malloc((size + 6) * sizeof(unsigned char));
-    unsigned char C = answer_write == 0 ? C_I0 : C_I1;
+    unsigned char C = flag == 0 ? C_I0 : C_I1;
 
     finalMessage[0] = FLAG;
     finalMessage[1] = A_03;
@@ -322,13 +320,13 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
         {
             *state = END;
 
-            answer = answer_read == 0 ? RR1 : RR0;
+            answer = flag == 0 ? RR1 : RR0;
             sendSupervisionMessage(fd, A_03, answer);
         }
         else
         {
             *state = START;
-            answer = answer_read == 0 ? REJ1 : REJ0;
+            answer = flag == 0 ? REJ1 : REJ0;
             sendSupervisionMessage(fd, A_03, answer);
         }
 
@@ -392,10 +390,12 @@ void receiveIMessage(int fd, int *size, unsigned char *data)
         case C_RCV:
             if (buf == (A_03 ^ C))
                 state = BCC1_OK;
-            else if (buf == FLAG)
-                state = FLAG_RCV;
-            else if (buf != FLAG)
-                state = START;
+            else
+            {
+                state = START; 
+                unsigned char answer = flag == 0 ? REJ1 : REJ0;
+                sendSupervisionMessage(fd, A_03, answer);
+            }
             break;
         case BCC1_OK:
             receiveData(fd, buf, data, &i, &state, &wait);
@@ -415,7 +415,7 @@ void receiveIMessage(int fd, int *size, unsigned char *data)
     }
 
     *size = i - 2;
-    answer_read ^= 1;
+    flag ^= 1;
 }
 
 int llclose(int fd, int flag)
