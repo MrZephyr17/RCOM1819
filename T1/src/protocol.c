@@ -12,7 +12,7 @@
 bool transmissionFlag = false;
 int transmissionCounter = 0;
 
-int flag = 0; 
+int flag = 0;
 
 void alarm_handler()
 {
@@ -192,7 +192,15 @@ int llwrite(int fd, unsigned char *buffer, int length)
                                  (flag == 0 && answer == RR1)))
             {
                 received = true;
-                debug_print("Received RR\n");
+                debug_print("Received expected RR\n");
+                alarm(0);
+                flag ^= 1;
+            }
+            else if (state == END && ((flag == 1 && answer == RR1) ||
+                                      (flag == 0 && answer == RR0)))
+            {
+                received = true;
+                debug_print("Received wrong RR, writing again\n");
                 alarm(0);
                 flag ^= 1;
             }
@@ -392,7 +400,7 @@ void receiveIMessage(int fd, int *size, unsigned char *data)
                 state = BCC1_OK;
             else
             {
-                state = START; 
+                state = START;
                 unsigned char answer = flag == 0 ? REJ1 : REJ0;
                 sendSupervisionMessage(fd, A_03, answer);
             }
