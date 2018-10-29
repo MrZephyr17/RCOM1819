@@ -188,23 +188,22 @@ int llwrite(int fd, unsigned char *buffer, int length)
             if (nRead > 0)
                 stateMachineSupervisionMessage(&state, buf, A_03, &answer, COptions);
 
-            if (state == END && ((flag == 1 && answer == RR0) ||
-                                 (flag == 0 && answer == RR1)))
+            if (state == END && ((flag == 1 && answer == (unsigned char)RR0) ||
+                                 (flag == 0 && answer == (unsigned char)RR1)))
             {
                 received = true;
                 debug_print("Received expected RR\n");
                 alarm(0);
                 flag ^= 1;
             }
-            else if (state == END && ((flag == 1 && answer == RR1) ||
-                                      (flag == 0 && answer == RR0)))
+            else if (state == END && ((flag == 1 && answer == (unsigned char)RR1) ||
+                                      (flag == 0 && answer == (unsigned char)RR0)))
             {
-                received = true;
+                transmissionFlag = true;
                 debug_print("Received wrong RR, writing again\n");
                 alarm(0);
-                flag ^= 1;
             }
-            else if (state == C_RCV && (answer == REJ0 || answer == REJ1))
+            else if (state == C_RCV && (answer == (unsigned char)REJ0 || answer == (unsigned char)REJ1))
             {
                 debug_print("Received REJ\n");
                 alarm(0);
@@ -296,22 +295,22 @@ int llread(int fd, unsigned char *buffer)
 {
     int size = 0;
 
-    receiveIMessage(fd, &size, buffer);
+    int success = receiveIMessage(fd, &size, buffer);
 
-    if (buffer == NULL || size <= 0)
-        return -1;
+    if (success == -1 || success == -2)
+        return success;
 
     return size;
 }
 
-bool checkBBC2(unsigned char rec_BCC2, unsigned char *data, int size)
+bool checkBCC2(unsigned char rec_BCC2, unsigned char *data, int size)
 {
     unsigned char exp_BCC2 = calcBCC2(data, size);
 
     return rec_BCC2 == exp_BCC2;
 }
 
-void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t *state, bool *wait)
+void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t *state, bool *wait, unsigned char *last)
 {
     if (buf == ESC)
     {
@@ -324,14 +323,17 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
         unsigned char bcc2 = data[*i - 1];
 
         unsigned char answer;
-        if (checkBBC2(bcc2, data, *i - 1))
+
+        if (checkBCC2(bcc2, data, *i - 1) || *last == data[1])
         {
             *state = END;
 
             answer = flag == 0 ? RR1 : RR0;
             sendSupervisionMessage(fd, A_03, answer);
+
+            *last = data[1];
         }
-        else
+        else if (*last != data[1])
         {
             *state = START;
             answer = flag == 0 ? REJ1 : REJ0;
@@ -354,7 +356,7 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
         data[(*i)++] = buf;
 }
 
-void receiveIMessage(int fd, int *size, unsigned char *data)
+int receiveIMessage(int fd, int *size, unsigned char *data)
 {
     state_t state = START;
     int res = 0;
@@ -363,6 +365,7 @@ void receiveIMessage(int fd, int *size, unsigned char *data)
     unsigned char C;
     unsigned char COptions[2] = {C_I0, C_I1};
     bool wait = false;
+    unsigned char last = 0;
 
     while (state != END)
     {
@@ -399,14 +402,10 @@ void receiveIMessage(int fd, int *size, unsigned char *data)
             if (buf == (A_03 ^ C))
                 state = BCC1_OK;
             else
-            {
                 state = START;
-                unsigned char answer = flag == 0 ? REJ1 : REJ0;
-                sendSupervisionMessage(fd, A_03, answer);
-            }
             break;
         case BCC1_OK:
-            receiveData(fd, buf, data, &i, &state, &wait);
+            receiveData(fd, buf, data, &i, &state, &wait, &last);
             break;
         case BCC2_OK:
             if (buf == FLAG)
@@ -415,15 +414,18 @@ void receiveIMessage(int fd, int *size, unsigned char *data)
                 state = BCC1_OK;
             break;
         case END:
-            break;
+            if (last == data[1])
+                return -2;
         default:
             fprintf(stderr, "Invalid state\n");
-            return;
+            return -1;
         }
     }
 
     *size = i - 2;
     flag ^= 1;
+
+    return 0;
 }
 
 int llclose(int fd, int flag)

@@ -26,7 +26,7 @@ void handleStart(unsigned char *data, unsigned char *filename);
  * @return true 
  * @return false 
  */
-bool handleData(unsigned char *data, FILE *file, unsigned char *last);
+bool handleData(unsigned char *data, FILE *file);
 
 /**
  * @brief 

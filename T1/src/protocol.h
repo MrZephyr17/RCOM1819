@@ -150,7 +150,7 @@ int llread(int fd, unsigned char *buffer);
  * @return true 
  * @return false 
  */
-bool checkBBC2(unsigned char rec_BCC2, unsigned char *data, int size);
+bool checkBCC2(unsigned char rec_BCC2, unsigned char *data, int size);
 
 /**
  * @brief 
@@ -162,7 +162,7 @@ bool checkBBC2(unsigned char rec_BCC2, unsigned char *data, int size);
  * @param state 
  * @param wait 
  */
-void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t *state, bool *wait);
+void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t *state, bool *wait, unsigned char *last);
 
 /**
  * @brief 
@@ -171,7 +171,7 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
  * @param size 
  * @return unsigned char* 
  */
-void receiveIMessage(int fd, int *size, unsigned char* data);
+int receiveIMessage(int fd, int *size, unsigned char* data);
 
 
 /**

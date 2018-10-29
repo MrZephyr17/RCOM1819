@@ -32,17 +32,15 @@ void handleStart(unsigned char *data, unsigned char *filename)
   }
 }
 
-bool handleData(unsigned char *data, FILE *file, unsigned char *last)
+bool handleData(unsigned char *data, FILE *file)
 {
   unsigned char C = data[0];
 
   if (C == F_C)
   {
     int K = 256 * data[3] + data[2];
-    if (data[1] != *last)
-      fwrite(data + 4, 1, K, file);
 
-    *last = data[1];
+    fwrite(data + 4, 1, K, file);
   }
 
   return C == END_C;
@@ -56,7 +54,6 @@ void readFile(int fd)
   unsigned char delim[21];
   bool end = false;
   int size = 0;
-  unsigned char last = -1;
 
   if (llread(fd, delim) <= 0)
   {
@@ -72,13 +69,14 @@ void readFile(int fd)
   {
     size = llread(fd, fragment);
 
-    if (size <= 0)
+    if (size == 0 || size == -1)
     {
       debug_print("llread error\n");
       continue;
     }
 
-    end = handleData(fragment, file, &last);
+    if (size != -2)
+      end = handleData(fragment, file);
   }
 
   fclose(file);
