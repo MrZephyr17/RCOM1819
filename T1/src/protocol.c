@@ -11,7 +11,7 @@
 
 bool transmissionFlag = false;
 int transmissionCounter = 0;
-
+unsigned char last = -1;
 int flag = 0;
 
 void alarm_handler()
@@ -310,7 +310,7 @@ bool checkBCC2(unsigned char rec_BCC2, unsigned char *data, int size)
     return rec_BCC2 == exp_BCC2;
 }
 
-void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t *state, bool *wait, unsigned char *last)
+void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t *state, bool *wait)
 {
     if (buf == ESC)
     {
@@ -324,14 +324,15 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
 
         unsigned char answer;
 
-        if (checkBCC2(bcc2, data, *i - 1) || *last == data[1])
+        if (checkBCC2(bcc2, data, *i - 1) || last == data[1])
         {
             *state = END;
 
             answer = flag == 0 ? RR1 : RR0;
             sendSupervisionMessage(fd, A_03, answer);
+            flag ^= 1;
         }
-        else if (*last != data[1])
+        else if (last != data[1])
         {
             *state = START;
             answer = flag == 0 ? REJ1 : REJ0;
@@ -363,7 +364,6 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
     unsigned char C;
     unsigned char COptions[2] = {C_I0, C_I1};
     bool wait = false;
-    unsigned char last = 0;
 
     while (state != END)
     {
@@ -403,7 +403,7 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
                 state = START;
             break;
         case BCC1_OK:
-            receiveData(fd, buf, data, &i, &state, &wait, &last);
+            receiveData(fd, buf, data, &i, &state, &wait);
             break;
         case BCC2_OK:
             if (buf == FLAG)
@@ -414,6 +414,7 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
         case END:
             if (last == data[1])
                 return -2;
+            break;
         default:
             fprintf(stderr, "Invalid state\n");
             return -1;
@@ -421,7 +422,6 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
     }
 
     *size = i - 2;
-    flag ^= 1;
     last = data[1];
 
     return 0;
