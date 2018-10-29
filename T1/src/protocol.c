@@ -330,8 +330,6 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
 
             answer = flag == 0 ? RR1 : RR0;
             sendSupervisionMessage(fd, A_03, answer);
-
-            *last = data[1];
         }
         else if (*last != data[1])
         {
@@ -424,6 +422,7 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
 
     *size = i - 2;
     flag ^= 1;
+    last = data[1];
 
     return 0;
 }
