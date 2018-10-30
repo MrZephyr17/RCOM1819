@@ -76,7 +76,7 @@ int llopen_transmitter(int fd)
             {
                 alarm(0);
                 received = true;
-                debug_print("Received UA_C\n");
+                debug_print("Received UA\n");
             }
         }
     } while (transmissionFlag && transmissionCounter < MAX_RETRY_NUMBER);
@@ -94,7 +94,7 @@ int llopen_receiver(int fd)
 {
     if (receiveSupervisionMessage(fd, A_03, SET_C))
     {
-        debug_print("Received SET_C\n");
+        debug_print("Received SET\n");
 
         sendSupervisionMessage(fd, A_03, UA_C);
 
@@ -419,14 +419,13 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
         }
     }
 
-    if (last == data[1] && data[1] != 0){
-        printf("aqui\n");
+    if (last == data[1] && data[1] != 0)
         return -2;
-    }
+ 
 
     *size = i - 2;
     last = data[1];
-    printf("last: %d\n", last);
+
     return 0;
 }
 
@@ -456,7 +455,7 @@ int llclose_receiver(int fd)
 
         if (receiveSupervisionMessage(fd, A_01, UA_C))
         {
-            debug_print("Received UA_C\n");
+            debug_print("Received UA\n");
         }
 
         return 0;
