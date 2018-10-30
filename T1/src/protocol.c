@@ -412,8 +412,6 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
                 state = BCC1_OK;
             break;
         case END:
-            if (last == data[1])
-                return -2;
             break;
         default:
             fprintf(stderr, "Invalid state\n");
@@ -421,9 +419,14 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
         }
     }
 
+    if (last == data[1] && data[1] != 0){
+        printf("aqui\n");
+        return -2;
+    }
+
     *size = i - 2;
     last = data[1];
-
+    printf("last: %d\n", last);
     return 0;
 }
 
