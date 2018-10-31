@@ -34,4 +34,4 @@ bool handleData(unsigned char *data, FILE *file);
  * 
  * @param fd 
  */
-void readFile(int fd, int test, int i);
+void readFile(int fd);

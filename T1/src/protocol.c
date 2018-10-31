@@ -13,6 +13,10 @@ bool transmissionFlag = false;
 int transmissionCounter = 0;
 unsigned char last = -1;
 int flag = 0;
+int fail_prob[5] = {2, 4, 6, 8, 10};
+
+extern int test_no;
+extern int test;
 
 void alarm_handler()
 {
@@ -141,9 +145,9 @@ void setUpPort(int port, int *fd, struct termios *oldtio, speed_t baudrate)
     newtio.c_cc[VMIN] = 0;  /* blocking read until 5 chars received */
 
     /*
-  VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
-  leitura do(s) proximo(s) caracter(es)
-  */
+VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
+leitura do(s) proximo(s) caracter(es)
+*/
 
     tcflush(*fd, TCIOFLUSH);
 
@@ -196,14 +200,16 @@ int llwrite(int fd, unsigned char *buffer, int length)
                 alarm(0);
                 flag ^= 1;
             }
-            else if (state == END && ((flag == 1 && answer == (unsigned char)RR1) ||
-                                      (flag == 0 && answer == (unsigned char)RR0)))
+            else if (state == END &&
+                     ((flag == 1 && answer == (unsigned char)RR1) ||
+                      (flag == 0 && answer == (unsigned char)RR0)))
             {
                 transmissionFlag = true;
                 debug_print("Received wrong RR, writing again\n");
                 alarm(0);
             }
-            else if (state == C_RCV && (answer == (unsigned char)REJ0 || answer == (unsigned char)REJ1))
+            else if (state == C_RCV && (answer == (unsigned char)REJ0 ||
+                                        answer == (unsigned char)REJ1))
             {
                 debug_print("Received REJ\n");
                 alarm(0);
@@ -310,7 +316,8 @@ bool checkBCC2(unsigned char rec_BCC2, unsigned char *data, int size)
     return rec_BCC2 == exp_BCC2;
 }
 
-void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t *state, bool *wait)
+void receiveData(int fd, unsigned char buf, unsigned char *data, int *i,
+                 state_t *state, bool *wait)
 {
     if (buf == ESC)
     {
@@ -326,11 +333,33 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i, state_t
 
         if (checkBCC2(bcc2, data, *i - 1) || last == data[1])
         {
-            *state = END;
+            if (test == 4)
+            {
+                int random = rand() % 100;
 
-            answer = flag == 0 ? RR1 : RR0;
-            sendSupervisionMessage(fd, A_03, answer);
-            flag ^= 1;
+                if (random < fail_prob[test_no])
+                {
+                    *state = START;
+                    answer = flag == 0 ? REJ1 : REJ0;
+                    sendSupervisionMessage(fd, A_03, answer);
+                }
+                else
+                {
+                    *state = END;
+
+                    answer = flag == 0 ? RR1 : RR0;
+                    sendSupervisionMessage(fd, A_03, answer);
+                    flag ^= 1;
+                }
+            }
+            else
+            {
+                *state = END;
+
+                answer = flag == 0 ? RR1 : RR0;
+                sendSupervisionMessage(fd, A_03, answer);
+                flag ^= 1;
+            }
         }
         else if (last != data[1])
         {
@@ -398,7 +427,19 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
             break;
         case C_RCV:
             if (buf == (A_03 ^ C))
-                state = BCC1_OK;
+            {
+                if (test == 4)
+                {
+                    int random = rand() % 100;
+
+                    if (random < fail_prob[test_no])
+                        state = START;
+                    else
+                        state = BCC1_OK;
+                }
+                else
+                    state = BCC1_OK;
+            }
             else
                 state = START;
             break;
@@ -425,7 +466,8 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
     *size = i - 2;
     last = data[1];
 
-    if (data[0] == END_C){
+    if (data[0] == END_C)
+    {
         last = -1;
         flag = 0;
     }

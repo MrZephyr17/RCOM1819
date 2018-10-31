@@ -7,11 +7,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 int alarm_flag = 1, count = 1;
+int length = 0, test_no = 0;
+int test = 0;
 
 #define NUMBER_OF_TESTS 5
-#define NUMBER_OF_ALARMS 4
+#define NUMBER_OF_ALARMS 1
 
 int alarm_times[NUMBER_OF_TESTS] = {1, 2, 3, 4, 5};
 speed_t baud_rates[NUMBER_OF_TESTS] = {B38400, B2400, B4800, B9600, B19200};
@@ -41,7 +44,6 @@ void handleStart(unsigned char *data, unsigned char *filename)
 {
   unsigned char T = data[1];
   unsigned char size = data[2];
-  int length;
 
   if (T == T_LENGTH)
   {
@@ -69,7 +71,7 @@ bool handleData(unsigned char *data, FILE *file)
   return C == END_C;
 }
 
-void readFile(int fd, int test, int i)
+void readFile(int fd)
 {
   FILE *file;
   unsigned char filename[MAX_BUF_SIZE + 4];
@@ -90,12 +92,13 @@ void readFile(int fd, int test, int i)
 
   while (!end)
   {
-    if(test == 3){
+    if (test == 3)
+    {
       while (count < NUMBER_OF_ALARMS)
       {
         if (alarm_flag)
         {
-          alarm(alarm_times[i]);
+          alarm(alarm_times[test_no]);
           alarm_flag = 0;
         }
       }
@@ -116,16 +119,18 @@ void readFile(int fd, int test, int i)
   fclose(file);
 }
 
-int receiveFile(char *port, int test, int i)
+int receiveFile(char *port)
 {
   int fd = 0;
   struct termios oldtio;
   speed_t baudrate = B38400;
 
-  if (test == 1)
-    baudrate = baud_rates[i];
+  srand(time(NULL));
 
-  debug_print("rate: %d\n", baudrate);
+  if (test == 1)
+    baudrate = baud_rates[test_no];
+
+  printf("rate: %d\n", baudrate);
 
   setUpPort(atoi(port), &fd, &oldtio, baudrate);
 
@@ -135,7 +140,7 @@ int receiveFile(char *port, int test, int i)
     exit(-1);
   }
 
-  readFile(fd, test, i);
+  readFile(fd);
 
   if (llclose(fd, RECEIVER) != 0)
   {
@@ -180,7 +185,9 @@ void setUpDelayAlarmHandler()
 int main(int argc, char **argv)
 {
   int numTests = 1;
-  int test = 0;
+  FILE *stats;
+  clock_t begin, end;
+  double time_spent, R;
 
   if ((argc != 2 && argc != 4) ||
       ((strcmp("0", argv[1]) != 0) && (strcmp("1", argv[1]) != 0)))
@@ -190,16 +197,31 @@ int main(int argc, char **argv)
   else if (argc == 4 && ((test = processTestArgument(argv)) == -1))
     return usage(argv);
 
+  stats = fopen("stats.txt", "w");
 
-  if (test >= 1 && test <= 4){
+  if (test >= 1 && test <= 4)
+  {
     numTests = NUMBER_OF_TESTS;
+    fprintf(stats, "TEST TYPE %d\n", test);
 
-    if(test == 3)
+    if (test == 3)
       setUpAlarmHandler();
   }
 
-  for (int i = 0; i < numTests; i++)
-    receiveFile(argv[1], i, test);
+  for (; test_no < numTests; test_no++)
+  {
+    begin = clock();
+
+    receiveFile(argv[1]);
+
+    end = clock();
+    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    R = length * 8.0 / time_spent;
+    fprintf(stats, "test no.%d: time taken - %f --- R - %f\n", test_no,
+            time_spent, R);
+  }
+
+  fclose(stats);
 
   return 0;
 }

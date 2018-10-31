@@ -3,7 +3,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 
 #include "protocol.h"
 #include "sender.h"
@@ -12,7 +11,9 @@
 #define NUMBER_OF_TESTS 5
 
 speed_t baud_rates[NUMBER_OF_TESTS] = {B38400, B2400, B4800, B9600, B19200};
-int messageSizes[NUMBER_OF_TESTS] = {250, 50, 100, 150, 200};
+int messageSizes[NUMBER_OF_TESTS] = {60, 120, 180, 240, 300};
+int test = 0;
+int test_no = 0;
 
 int usage(char **argv)
 {
@@ -174,16 +175,16 @@ void writeFile(int fd, char *filename, int messageSize)
 
 int processTestArgument(char **argv)
 {
-  if (strcmp(argv[3], "C") == 0)
+  if (strcmp(argv[4], "C") == 0)
     return 1;
 
-  if (strcmp(argv[3], "I") == 0)
+  if (strcmp(argv[4], "I") == 0)
     return 2;
 
-  if (strcmp(argv[3], "T_prop") == 0)
+  if (strcmp(argv[4], "T_prop") == 0)
     return 3;
 
-  if (strcmp(argv[3], "FER") == 0)
+  if (strcmp(argv[4], "FER") == 0)
     return 4;
 
   return -1;
@@ -201,7 +202,8 @@ int transferFile(char *fileName, char *port, int i, int test)
   else if (test == 1)
     baudrate = baud_rates[i];
 
-  debug_print("rate: %d\n", baudrate);
+  printf("rate: %d\n", baudrate);
+  printf("I size: %d\n", messageSize);
 
   setUpPort(atoi(port), &fd, &oldtio, baudrate);
 
@@ -226,11 +228,7 @@ int transferFile(char *fileName, char *port, int i, int test)
 
 int main(int argc, char **argv)
 {
-  int test = 0;
   int numTests = 1;
-  clock_t begin, end;
-  double time_spent;
-  FILE *stats;
 
   if ((argc != 3 && argc != 5) ||
       ((strcmp("0", argv[1]) != 0) &&
@@ -241,21 +239,11 @@ int main(int argc, char **argv)
   else if (argc == 5 && ((test = processTestArgument(argv)) == -1))
     return usage(argv);
 
-  stats = fopen("stats.txt", "w");
-
-  if (test >= 1 && test <=4)
+  if (test >= 1 && test <= 4)
     numTests = NUMBER_OF_TESTS;
 
-  for (int i = 0; i < numTests; i++)
-  {
-    begin = clock();
-    transferFile(argv[2], argv[1], i, test);
-    end = clock();
-    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    fprintf(stats, "test %d: time taken - %f\n", i, time_spent);
-  }
-
-  fclose(stats);
+  for (; test_no < numTests; test_no++)
+    transferFile(argv[2], argv[1], test_no, test);
 
   return 0;
 }
