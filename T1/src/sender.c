@@ -3,14 +3,23 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include "protocol.h"
 #include "sender.h"
 #include "utils.h"
 
+#define NUMBER_OF_TESTS 5
+
+speed_t baud_rates[NUMBER_OF_TESTS] = {B38400, B2400, B4800, B9600, B19200};
+int messageSizes[NUMBER_OF_TESTS] = {250, 50, 100, 150, 200};
+
 int usage(char **argv)
 {
-  printf("Usage: %s <COM> <FILENAME>\n", argv[0]);
+  printf("Usage: %s <COM> <FILENAME> [-t ...]\n", argv[0]);
+  printf("Option -t: allows to test effiency. Only one argument allowed, don\'t\nforget to use it on both sides, if necessary.\n");
+  printf("    Arguments: I - vary I message length\n");
+  printf("               C - vary baudrate\n");
   printf("ex: %s 0 pinguim.gif\n", argv[0]);
 
   return 1;
@@ -101,7 +110,7 @@ unsigned char *getFragment(int seqNum, unsigned char *data, int K)
   return fragment;
 }
 
-void writeFile(int fd, char *filename)
+void writeFile(int fd, char *filename, int messageSize)
 {
   unsigned char *fileData;
   off_t fileSize = 0;
@@ -118,17 +127,17 @@ void writeFile(int fd, char *filename)
     exit(-1);
   }
 
-  int rest = fileSize % FRAG_K;
-  int numPackages = fileSize / FRAG_K;
+  int rest = fileSize % messageSize;
+  int numPackages = fileSize / messageSize;
 
   unsigned char *fragment;
 
   int i = 0;
   for (; i < numPackages; i++)
   {
-    fragment = getFragment(i, fileData + FRAG_K * i, FRAG_K);
+    fragment = getFragment(i, fileData + messageSize * i, messageSize);
 
-    if (llwrite(fd, fragment, FRAG_K + 4) <= 0)
+    if (llwrite(fd, fragment, messageSize + 4) <= 0)
     {
       fprintf(stderr, "llwrite error\n");
       exit(-1);
@@ -137,7 +146,7 @@ void writeFile(int fd, char *filename)
 
   if (rest != 0)
   {
-    fragment = getFragment(i, fileData + FRAG_K * i, rest);
+    fragment = getFragment(i, fileData + messageSize * i, rest);
     if (llwrite(fd, fragment, rest + 4) <= 0)
     {
       fprintf(stderr, "llwrite error\n");
@@ -161,16 +170,32 @@ void writeFile(int fd, char *filename)
   free(fileData);
 }
 
-int main(int argc, char **argv)
+int processTestArgument(char **argv)
+{
+  if (strcmp(argv[4], "C") == 0)
+    return 1;
+
+  if (strcmp(argv[4], "I") == 0)
+    return 2;
+
+  return -1;
+}
+
+int transferFile(char *fileName, char *port, int i, int test)
 {
   int fd = 0;
   struct termios oldtio;
+  int messageSize = FRAG_K;
+  speed_t baudrate = B38400;
 
-  if ((argc != 3) ||
-      ((strcmp("0", argv[1]) != 0) && (strcmp("1", argv[1]) != 0)))
-    usage(argv);
+  if (test == 2)
+    messageSize = messageSizes[i];
+  else if (test == 1)
+    baudrate = baud_rates[i];
 
-  setUpPort(atoi(argv[1]), &fd, &oldtio);
+  debug_print("rate: %d\n", baudrate);
+
+  setUpPort(atoi(port), &fd, &oldtio, baudrate);
 
   if (llopen(TRANSMITTER, fd) != 0)
   {
@@ -178,7 +203,7 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
-  writeFile(fd, argv[2]);
+  writeFile(fd, fileName, messageSize);
 
   if (llclose(fd, TRANSMITTER) != 0)
   {
@@ -187,6 +212,42 @@ int main(int argc, char **argv)
   }
 
   closeFd(fd, &oldtio);
+
+  return 0;
+}
+
+int main(int argc, char **argv)
+{
+  int test = 0;
+  int numTests = 1;
+  clock_t t;
+  double time_elapsed;
+  FILE *stats;
+
+  if ((argc != 3 && argc != 5) ||
+      ((strcmp("0", argv[1]) != 0) &&
+       (strcmp("1", argv[1]) != 0)))
+    return usage(argv);
+  else if (argc == 5 && strcmp("-t", argv[3]) != 0)
+    return usage(argv);
+  else if (argc == 5 && ((test = processTestArgument(argv)) == -1))
+    return usage(argv);
+
+  stats = fopen("stats.txt", "w");
+
+  if (test == 1 || test == 2)
+    numTests = NUMBER_OF_TESTS;
+
+  for (int i = 0; i < numTests; i++)
+  {
+    t = clock();
+    transferFile(argv[2], argv[1], i, test);
+    t = clock() - t;
+    time_elapsed = ((double)t) / CLOCKS_PER_SEC;
+    fprintf(stats, "test %d: time taken - %f\n", i, time_elapsed);
+  }
+
+  fclose(stats);
 
   return 0;
 }

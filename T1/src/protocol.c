@@ -104,7 +104,7 @@ int llopen_receiver(int fd)
     return -1;
 }
 
-void setUpPort(int port, int *fd, struct termios *oldtio)
+void setUpPort(int port, int *fd, struct termios *oldtio, speed_t baudrate)
 {
     struct termios newtio;
     char *portPath = malloc(PORT_SIZE);
@@ -130,7 +130,7 @@ void setUpPort(int port, int *fd, struct termios *oldtio)
     }
 
     bzero(&newtio, sizeof(newtio));
-    newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+    newtio.c_cflag = baudrate | CS8 | CLOCAL | CREAD;
     newtio.c_iflag = IGNPAR;
     newtio.c_oflag = 0;
 
@@ -141,9 +141,9 @@ void setUpPort(int port, int *fd, struct termios *oldtio)
     newtio.c_cc[VMIN] = 0;  /* blocking read until 5 chars received */
 
     /*
-    VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
-    leitura do(s) proximo(s) caracter(es)
-    */
+  VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
+  leitura do(s) proximo(s) caracter(es)
+  */
 
     tcflush(*fd, TCIOFLUSH);
 
@@ -421,10 +421,14 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
 
     if (last == data[1] && data[1] != 0)
         return -2;
- 
 
     *size = i - 2;
     last = data[1];
+
+    if (data[0] == END_C){
+        last = -1;
+        flag = 0;
+    }
 
     return 0;
 }

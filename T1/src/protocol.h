@@ -90,7 +90,7 @@ int llopen_receiver(int fd);
  * @param fd 
  * @param oldtio 
  */
-void setUpPort(int port, int *fd, struct termios *oldtio);
+void setUpPort(int port, int *fd, struct termios *oldtio, speed_t baudrate);
 
 /**
  * @brief 
