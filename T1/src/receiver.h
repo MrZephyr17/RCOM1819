@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdio.h>
 
 /**
  * @brief 
@@ -33,4 +34,4 @@ bool handleData(unsigned char *data, FILE *file);
  * 
  * @param fd 
  */
-void readFile(int fd);
+void readFile(int fd, int test, int i);

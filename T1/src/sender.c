@@ -20,6 +20,8 @@ int usage(char **argv)
   printf("Option -t: allows to test effiency. Only one argument allowed, don\'t\nforget to use it on both sides, if necessary.\n");
   printf("    Arguments: I - vary I message length\n");
   printf("               C - vary baudrate\n");
+  printf("               T_prop - vary processing time\n");
+  printf("               FER - vary frame error ratio\n");
   printf("ex: %s 0 pinguim.gif\n", argv[0]);
 
   return 1;
@@ -172,11 +174,17 @@ void writeFile(int fd, char *filename, int messageSize)
 
 int processTestArgument(char **argv)
 {
-  if (strcmp(argv[4], "C") == 0)
+  if (strcmp(argv[3], "C") == 0)
     return 1;
 
-  if (strcmp(argv[4], "I") == 0)
+  if (strcmp(argv[3], "I") == 0)
     return 2;
+
+  if (strcmp(argv[3], "T_prop") == 0)
+    return 3;
+
+  if (strcmp(argv[3], "FER") == 0)
+    return 4;
 
   return -1;
 }
@@ -220,8 +228,8 @@ int main(int argc, char **argv)
 {
   int test = 0;
   int numTests = 1;
-  clock_t t;
-  double time_elapsed;
+  clock_t begin, end;
+  double time_spent;
   FILE *stats;
 
   if ((argc != 3 && argc != 5) ||
@@ -235,16 +243,16 @@ int main(int argc, char **argv)
 
   stats = fopen("stats.txt", "w");
 
-  if (test == 1 || test == 2)
+  if (test >= 1 && test <=4)
     numTests = NUMBER_OF_TESTS;
 
   for (int i = 0; i < numTests; i++)
   {
-    t = clock();
+    begin = clock();
     transferFile(argv[2], argv[1], i, test);
-    t = clock() - t;
-    time_elapsed = ((double)t) / CLOCKS_PER_SEC;
-    fprintf(stats, "test %d: time taken - %f\n", i, time_elapsed);
+    end = clock();
+    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    fprintf(stats, "test %d: time taken - %f\n", i, time_spent);
   }
 
   fclose(stats);
