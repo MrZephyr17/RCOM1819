@@ -68,3 +68,7 @@ unsigned char *getFragment(int seqNum, unsigned char *data, int K);
  * @param filename
  */
 void writeFile(int fd, char *filename, int messageSize);
+
+int processTestArgument(char **argv);
+
+int transferFile(char *fileName, char *port);

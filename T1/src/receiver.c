@@ -9,13 +9,12 @@
 #include <unistd.h>
 #include <time.h>
 
-int alarm_flag = 1, count = 1;
-int length = 0, test_no = 0;
-int test = 0;
-
 #define NUMBER_OF_TESTS 5
 #define NUMBER_OF_ALARMS 1
 
+int alarm_flag = 1, count = 1;
+int length = 0, test_no_r = 0;
+int test_r = 0;
 int alarm_times[NUMBER_OF_TESTS] = {1, 2, 3, 4, 5};
 speed_t baud_rates[NUMBER_OF_TESTS] = {B38400, B2400, B4800, B9600, B19200};
 
@@ -92,13 +91,13 @@ void readFile(int fd)
 
   while (!end)
   {
-    if (test == 3)
+    if (test_r == 3)
     {
       while (count < NUMBER_OF_ALARMS)
       {
         if (alarm_flag)
         {
-          alarm(alarm_times[test_no]);
+          alarm(alarm_times[test_no_r]);
           alarm_flag = 0;
         }
       }
@@ -127,8 +126,8 @@ int receiveFile(char *port)
 
   srand(time(NULL));
 
-  if (test == 1)
-    baudrate = baud_rates[test_no];
+  if (test_r == 1)
+    baudrate = baud_rates[test_no_r];
 
   printf("rate: %d\n", baudrate);
 
@@ -186,7 +185,7 @@ int main(int argc, char **argv)
 {
   int numTests = 1;
   FILE *stats;
-  clock_t begin, end;
+  time_t begin, end;
   double time_spent, R;
 
   if ((argc != 2 && argc != 4) ||
@@ -194,30 +193,30 @@ int main(int argc, char **argv)
     return usage(argv);
   else if (argc == 4 && strcmp(argv[2], "-t") != 0)
     return usage(argv);
-  else if (argc == 4 && ((test = processTestArgument(argv)) == -1))
+  else if (argc == 4 && ((test_r = processTestArgument(argv)) == -1))
     return usage(argv);
 
   stats = fopen("stats.txt", "w");
 
-  if (test >= 1 && test <= 4)
+  if (test_r >= 1 && test_r <= 4)
   {
     numTests = NUMBER_OF_TESTS;
-    fprintf(stats, "TEST TYPE %d\n", test);
+    fprintf(stats, "TEST TYPE %d\n", test_r);
 
-    if (test == 3)
+    if (test_r == 3)
       setUpAlarmHandler();
   }
 
-  for (; test_no < numTests; test_no++)
+  for (; test_no_r < numTests; test_no_r++)
   {
-    begin = clock();
+    begin = time(NULL);
 
     receiveFile(argv[1]);
 
-    end = clock();
-    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    end = time(NULL);
+    time_spent = difftime(end, begin);
     R = length * 8.0 / time_spent;
-    fprintf(stats, "test no.%d: time taken - %f --- R - %f\n", test_no,
+    fprintf(stats, "test no.%d: time taken - %.2f (s) --- R - %f\n", test_no_r,
             time_spent, R);
   }
 

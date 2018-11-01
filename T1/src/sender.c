@@ -139,7 +139,7 @@ void writeFile(int fd, char *filename, int messageSize)
   for (; i < numPackages; i++)
   {
     fragment = getFragment(i, fileData + messageSize * i, messageSize);
-
+    
     if (llwrite(fd, fragment, messageSize + 4) <= 0)
     {
       fprintf(stderr, "llwrite error\n");
@@ -190,7 +190,7 @@ int processTestArgument(char **argv)
   return -1;
 }
 
-int transferFile(char *fileName, char *port, int i, int test)
+int transferFile(char *fileName, char *port)
 {
   int fd = 0;
   struct termios oldtio;
@@ -198,9 +198,9 @@ int transferFile(char *fileName, char *port, int i, int test)
   speed_t baudrate = B38400;
 
   if (test == 2)
-    messageSize = messageSizes[i];
+    messageSize = messageSizes[test_no];
   else if (test == 1)
-    baudrate = baud_rates[i];
+    baudrate = baud_rates[test_no];
 
   printf("rate: %d\n", baudrate);
   printf("I size: %d\n", messageSize);
@@ -243,7 +243,7 @@ int main(int argc, char **argv)
     numTests = NUMBER_OF_TESTS;
 
   for (; test_no < numTests; test_no++)
-    transferFile(argv[2], argv[1], test_no, test);
+    transferFile(argv[2], argv[1]);
 
   return 0;
 }

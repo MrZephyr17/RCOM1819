@@ -15,8 +15,8 @@ unsigned char last = -1;
 int flag = 0;
 int fail_prob[5] = {2, 4, 6, 8, 10};
 
-extern int test_no;
-extern int test;
+extern int test_no_r;
+extern int test_r;
 
 void alarm_handler()
 {
@@ -333,11 +333,11 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i,
 
         if (checkBCC2(bcc2, data, *i - 1) || last == data[1])
         {
-            if (test == 4)
+            if (test_r == 4)
             {
                 int random = rand() % 100;
 
-                if (random < fail_prob[test_no])
+                if (random < fail_prob[test_no_r])
                 {
                     *state = START;
                     answer = flag == 0 ? REJ1 : REJ0;
@@ -428,11 +428,11 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
         case C_RCV:
             if (buf == (A_03 ^ C))
             {
-                if (test == 4)
+                if (test_r == 4)
                 {
                     int random = rand() % 100;
 
-                    if (random < fail_prob[test_no])
+                    if (random < fail_prob[test_no_r])
                         state = START;
                     else
                         state = BCC1_OK;
@@ -463,7 +463,7 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
     if (last == data[1] && data[1] != 0)
         return -2;
 
-    *size = i - 2;
+    *size = i - 2; 
     last = data[1];
 
     if (data[0] == END_C)

@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+void delay_alarm_handler();
+
 /**
  * @brief 
  * 
@@ -35,3 +37,9 @@ bool handleData(unsigned char *data, FILE *file);
  * @param fd 
  */
 void readFile(int fd);
+
+int receiveFile(char *port);
+
+int processTestArgument(char **argv);
+
+void setUpDelayAlarmHandler();
