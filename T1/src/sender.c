@@ -118,7 +118,7 @@ void writeFile(int fd, char *filename, int messageSize)
   unsigned char *fileData;
   off_t fileSize = 0;
   int delimSize = 0;
-
+  FILE* log = fopen("log", "a");
   fileData = readFile(filename, &fileSize);
 
   unsigned char *start = getDelimPackage(START_C, fileSize, filename,
@@ -139,7 +139,8 @@ void writeFile(int fd, char *filename, int messageSize)
   for (; i < numPackages; i++)
   {
     fragment = getFragment(i, fileData + messageSize * i, messageSize);
-    
+
+    fwrite(fragment,1,messageSize + 4,log);
     if (llwrite(fd, fragment, messageSize + 4) <= 0)
     {
       fprintf(stderr, "llwrite error\n");
@@ -171,6 +172,7 @@ void writeFile(int fd, char *filename, int messageSize)
   free(end);
   free(fragment);
   free(fileData);
+  fclose(log);
 }
 
 int processTestArgument(char **argv)
