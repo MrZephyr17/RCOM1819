@@ -172,9 +172,9 @@ int llwrite(int fd, unsigned char *buffer, int length)
     unsigned char BCC2 = calcBCC2(buffer, length);
 
     unsigned char *dataStuffed = stuffing(buffer, length, &dataSize);
-    FILE* log = fopen("log1.txt", "a");
+    FILE *log = fopen("log1.txt", "a");
     unsigned char *finalMessage = calcFinalMessage(dataStuffed, dataSize, BCC2);
-    fwrite(finalMessage,dataSize, 1, log);
+    fwrite(finalMessage, dataSize, 1, log);
     free(dataStuffed);
 
     do
@@ -327,13 +327,26 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i,
         return;
     }
 
+    if (*wait)
+    {
+        if (buf == ESC_2)
+            data[(*i)++] = FLAG;
+        else if (buf == ESC_3)
+            data[(*i)++] = ESC;
+
+        *wait = false;
+    }
+    else
+        data[(*i)++] = buf;
+
     if (buf == FLAG)
     {
+        printf("i:%d\n", *i);
         unsigned char bcc2 = data[*i - 1];
 
         unsigned char answer;
-        FILE * log = fopen("log_read.txt","a");
-        fwrite(data,*i,1,log); 
+        FILE *log = fopen("log_read.txt", "a");
+        fwrite(data, *i, 1, log);
         if (checkBCC2(bcc2, data, *i - 1) || last == data[1])
         {
             if (test == 4)
@@ -373,18 +386,6 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i,
         fclose(log);
         debug_print("Sent 0x%02X\n", answer);
     }
-
-    if (*wait)
-    {
-        if (buf == ESC_2)
-            data[(*i)++] = FLAG;
-        else if (buf == ESC_3)
-            data[(*i)++] = ESC;
-
-        *wait = false;
-    }
-    else
-        data[(*i)++] = buf;
 }
 
 int receiveIMessage(int fd, int *size, unsigned char *data)
@@ -466,7 +467,7 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
     if (last == data[1] && data[1] != 0)
         return -2;
 
-    *size = i - 2; 
+    *size = i - 2;
     last = data[1];
 
     if (data[0] == END_C)
