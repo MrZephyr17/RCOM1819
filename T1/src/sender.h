@@ -68,17 +68,28 @@ unsigned char *getFragment(int seqNum, unsigned char *data, int K);
 
 /**
  * @brief Sends the Start Delim Package
- *        Sends Fragments/Data Packages containing parts of the file (named filename) data.
- *        Sends the End Delim Package to end the File transmition.
- *        All the Packages are sent trough the Serial Port (with descriptor fd) using llwrite function.
- *        Fragments are created after reading the file data and using the getFragment function.
+ *        Sends Fragments/Data Packages containing parts of the file (named
+ * filename) data. Sends the End Delim Package to end the File transmition. All
+ * the Packages are sent trough the Serial Port (with descriptor fd) using
+ * llwrite function. Fragments are created after reading the file data and using
+ * the getFragment function.
  *
  *
  * @param fd : Serial Port descriptor
  * @param filename : Name of the file to send
+ * @param messageSize : Serial Port descriptor
+ * @param fileData : Name of the file to send
+ * @param fileSize : Name of the file to send
  */
-void writeFile(int fd, char *filename, int messageSize);
+void writeFile(int fd, char *filename, int messageSize, unsigned char* fileData, off_t fileSize);
 
-int processTestArgument(char **argv);
-
-int transferFile(char *fileName, char *port);
+/**
+ * @brief 
+ * 
+ * @param fileName 
+ * @param port 
+ * @param fileData 
+ * @param fileSize 
+ * @return int 
+ */
+int transferFile(char *fileName, char *port, unsigned char *fileData, off_t fileSize);

@@ -2,7 +2,15 @@
 
 #include <stdbool.h>
 
-#define MAX_BUF_SIZE 264
+#define MAX_BUF_SIZE 600
+#define NUMBER_OF_TESTS 5
+#define NUMBER_OF_ALARMS 1
+#define MAX_FILENAME_SIZE 50
+#define DELIM_SIZE 21
+
+typedef enum {
+  INV, C, I, T_prop, FER
+} test_t;
 
 #ifdef DEBUG
 #define DEBUG_TEST 1
@@ -25,3 +33,24 @@
  * @return false : otherwise
  */
 bool findByteOnArray(unsigned char byte, unsigned char *array);
+
+/**
+ * @brief Gets the current time
+ * 
+ * @return unsigned long long 
+ */
+unsigned long long getTime();
+
+/**
+ * @brief 
+ * 
+ */
+void startTime();
+
+/**
+ * @brief
+ *
+ * @param argv
+ * @return int
+ */
+int processTestArgument(char **argv, int argNum);

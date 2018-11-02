@@ -42,8 +42,16 @@ bool handleData(unsigned char *data, FILE *file);
  */
 void readFile(int fd);
 
+/**
+ * @brief 
+ * 
+ * @param port 
+ * @return int 
+ */
 int receiveFile(char *port);
 
-int processTestArgument(char **argv);
-
+/**
+ * @brief Set the Up Delay Alarm Handler object
+ * 
+ */
 void setUpDelayAlarmHandler();

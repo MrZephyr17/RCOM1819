@@ -116,13 +116,14 @@ int llwrite(int fd, unsigned char *buffer, int length);
 
 /**
  * @brief Receives original Fragment and returns it stuffed
- * 
+ *
  * @param data : non stuffed Fragment
+ * @param BCC2 : Fragments's size
  * @param dataSize : Fragments's size
  * @param size : Variable to be set with stuffed fragment's size
  * @return unsigned char* : Stuffed Fragment
  */
-unsigned char *stuffing(unsigned char *data, int dataSize, int *size);
+unsigned char *stuffing(unsigned char *data, unsigned char BCC2, int dataSize, int *size);
 
 /**
  * @brief Calculates BBC2 that protects the Fragment of data that will be saved at the information message.
@@ -139,11 +140,9 @@ unsigned char calcBCC2(unsigned char *data, int size);
  * 
  * @param data : Fragment/Data Package
  * @param size : Fragment's size
- * @param BCC2 
  * @return unsigned char* : Information message
  */
-unsigned char *calcFinalMessage(unsigned char *data, int size,
-                                unsigned char BCC2);
+unsigned char *calcFinalMessage(unsigned char *data, int size);
 
 /**
  * @brief Reads an Information Message from the Serial Port (using fd descriptor).

@@ -8,17 +8,15 @@
 #include "sender.h"
 #include "utils.h"
 
-#define NUMBER_OF_TESTS 5
-
-speed_t baud_rates[NUMBER_OF_TESTS] = {B38400, B2400, B4800, B9600, B19200};
-int messageSizes[NUMBER_OF_TESTS] = {60, 120, 180, 240, 300};
-int test = 0;
+speed_t baud_rates[NUMBER_OF_TESTS] = {B2400, B4800, B9600, B19200, B38400};
+int messageSizes[NUMBER_OF_TESTS] = {32, 64, 128, 256, 512};
+test_t test = INV;
 int test_no = 0;
 
 int usage(char **argv)
 {
   printf("Usage: %s <COM> <FILENAME> [-t ...]\n", argv[0]);
-  printf("Option -t: allows to test effiency. Only one argument allowed, don\'t\nforget to use it on both sides, if necessary.\n");
+  printf("Option -t: allows to test effiency. Only one argument allowed, don\'t\nforget to use it on both sides.\n");
   printf("    Arguments: I - vary I message length\n");
   printf("               C - vary baudrate\n");
   printf("               T_prop - vary processing time\n");
@@ -113,13 +111,9 @@ unsigned char *getFragment(int seqNum, unsigned char *data, int K)
   return fragment;
 }
 
-void writeFile(int fd, char *filename, int messageSize)
+void writeFile(int fd, char *filename, int messageSize, unsigned char *fileData, off_t fileSize)
 {
-  unsigned char *fileData;
-  off_t fileSize = 0;
   int delimSize = 0;
-  FILE* log = fopen("log", "a");
-  fileData = readFile(filename, &fileSize);
 
   unsigned char *start = getDelimPackage(START_C, fileSize, filename,
                                          strlen(filename), &delimSize);
@@ -140,7 +134,6 @@ void writeFile(int fd, char *filename, int messageSize)
   {
     fragment = getFragment(i, fileData + messageSize * i, messageSize);
 
-    fwrite(fragment,1,messageSize + 4,log);
     if (llwrite(fd, fragment, messageSize + 4) <= 0)
     {
       fprintf(stderr, "llwrite error\n");
@@ -171,37 +164,18 @@ void writeFile(int fd, char *filename, int messageSize)
   free(start);
   free(end);
   free(fragment);
-  free(fileData);
-  fclose(log);
 }
 
-int processTestArgument(char **argv)
-{
-  if (strcmp(argv[4], "C") == 0)
-    return 1;
-
-  if (strcmp(argv[4], "I") == 0)
-    return 2;
-
-  if (strcmp(argv[4], "T_prop") == 0)
-    return 3;
-
-  if (strcmp(argv[4], "FER") == 0)
-    return 4;
-
-  return -1;
-}
-
-int transferFile(char *fileName, char *port)
+int transferFile(char *fileName, char *port, unsigned char *fileData, off_t fileSize)
 {
   int fd = 0;
   struct termios oldtio;
   int messageSize = FRAG_K;
   speed_t baudrate = B38400;
 
-  if (test == 2)
+  if (test == I)
     messageSize = messageSizes[test_no];
-  else if (test == 1)
+  else if (test == C)
     baudrate = baud_rates[test_no];
 
   printf("rate: %d\n", baudrate);
@@ -215,7 +189,7 @@ int transferFile(char *fileName, char *port)
     exit(-1);
   }
 
-  writeFile(fd, fileName, messageSize);
+  writeFile(fd, fileName, messageSize, fileData, fileSize);
 
   if (llclose(fd, TRANSMITTER) != 0)
   {
@@ -231,6 +205,8 @@ int transferFile(char *fileName, char *port)
 int main(int argc, char **argv)
 {
   int numTests = 1;
+  off_t fileSize = 0;
+  unsigned char *fileData;
 
   if ((argc != 3 && argc != 5) ||
       ((strcmp("0", argv[1]) != 0) &&
@@ -238,14 +214,21 @@ int main(int argc, char **argv)
     return usage(argv);
   else if (argc == 5 && strcmp("-t", argv[3]) != 0)
     return usage(argv);
-  else if (argc == 5 && ((test = processTestArgument(argv)) == -1))
+  else if (argc == 5 && ((test = processTestArgument(argv, 4)) == INV))
     return usage(argv);
 
-  if (test >= 1 && test <= 4)
+  if (test > INV)
     numTests = NUMBER_OF_TESTS;
 
+  fileData = readFile(argv[2], &fileSize);
+
   for (; test_no < numTests; test_no++)
-    transferFile(argv[2], argv[1]);
+    transferFile(argv[2], argv[1], fileData, fileSize);
+
+  if (test > INV)
+    printf("Please consult test results on stats.txt\n");
+
+  free(fileData);
 
   return 0;
 }

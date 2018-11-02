@@ -13,9 +13,9 @@ bool transmissionFlag = false;
 int transmissionCounter = 0;
 unsigned char last = -1;
 int flag = 0;
-int fail_prob[5] = {2, 4, 6, 8, 10};
+int fail_prob[NUMBER_OF_TESTS] = {2, 4, 6, 8, 10};
 
-extern int test_no;
+extern test_t test_no;
 extern int test;
 
 void alarm_handler()
@@ -170,11 +170,8 @@ int llwrite(int fd, unsigned char *buffer, int length)
     unsigned char COptions[] = {RR0, RR1, REJ0, REJ1};
     unsigned char answer = 0;
     unsigned char BCC2 = calcBCC2(buffer, length);
-
-    unsigned char *dataStuffed = stuffing(buffer, length, &dataSize);
-    FILE *log = fopen("log1.txt", "a");
-    unsigned char *finalMessage = calcFinalMessage(dataStuffed, dataSize, BCC2);
-    fwrite(finalMessage, dataSize, 1, log);
+    unsigned char *dataStuffed = stuffing(buffer, BCC2, length, &dataSize);
+    unsigned char *finalMessage = calcFinalMessage(dataStuffed, dataSize);
     free(dataStuffed);
 
     do
@@ -226,14 +223,12 @@ int llwrite(int fd, unsigned char *buffer, int length)
     transmissionFlag = false;
     transmissionCounter = 0;
 
-    fclose(log);
-
     return res;
 }
 
-unsigned char *stuffing(unsigned char *data, int dataSize, int *size)
+unsigned char *stuffing(unsigned char *data, unsigned char BCC2, int dataSize, int *size)
 {
-    int stuffedSize = dataSize;
+    int stuffedSize = dataSize + 1;
     unsigned char *dataStuffed = malloc(stuffedSize * sizeof(unsigned char));
     int i = 0, j = 0;
 
@@ -259,6 +254,25 @@ unsigned char *stuffing(unsigned char *data, int dataSize, int *size)
         }
     }
 
+    if (BCC2 == FLAG)
+    {
+        dataStuffed =
+            realloc(dataStuffed, (++stuffedSize) * sizeof(unsigned char));
+        dataStuffed[j++] = ESC;
+        dataStuffed[j] = ESC_2;
+    }
+    else if (BCC2 == ESC)
+    {
+        dataStuffed =
+            realloc(dataStuffed, (++stuffedSize) * sizeof(unsigned char));
+        dataStuffed[j++] = ESC;
+        dataStuffed[j] = ESC_3;
+    }
+    else
+    {
+        dataStuffed[j] = BCC2;
+    }
+
     *size = stuffedSize;
 
     return dataStuffed;
@@ -275,8 +289,7 @@ unsigned char calcBCC2(unsigned char *data, int size)
     return BCC2;
 }
 
-unsigned char *calcFinalMessage(unsigned char *data, int size,
-                                unsigned char BCC2)
+unsigned char *calcFinalMessage(unsigned char *data, int size)
 {
     unsigned char *finalMessage = malloc((size + 6) * sizeof(unsigned char));
     unsigned char C = flag == 0 ? C_I0 : C_I1;
@@ -293,7 +306,6 @@ unsigned char *calcFinalMessage(unsigned char *data, int size,
 
     i += 4;
 
-    finalMessage[i++] = BCC2;
     finalMessage[i++] = FLAG;
 
     return finalMessage;
@@ -327,26 +339,12 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i,
         return;
     }
 
-    if (*wait)
-    {
-        if (buf == ESC_2)
-            data[(*i)++] = FLAG;
-        else if (buf == ESC_3)
-            data[(*i)++] = ESC;
-
-        *wait = false;
-    }
-    else
-        data[(*i)++] = buf;
-
     if (buf == FLAG)
     {
-        printf("i:%d\n", *i);
         unsigned char bcc2 = data[*i - 1];
 
         unsigned char answer;
-        FILE *log = fopen("log_read.txt", "a");
-        fwrite(data, *i, 1, log);
+
         if (checkBCC2(bcc2, data, *i - 1) || last == data[1])
         {
             if (test == 4)
@@ -383,9 +381,20 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i,
             answer = flag == 0 ? REJ1 : REJ0;
             sendSupervisionMessage(fd, A_03, answer);
         }
-        fclose(log);
         debug_print("Sent 0x%02X\n", answer);
     }
+
+    if (*wait)
+    {
+        if (buf == ESC_2)
+            data[(*i)++] = FLAG;
+        else if (buf == ESC_3)
+            data[(*i)++] = ESC;
+
+        *wait = false;
+    }
+    else
+        data[(*i)++] = buf;
 }
 
 int receiveIMessage(int fd, int *size, unsigned char *data)

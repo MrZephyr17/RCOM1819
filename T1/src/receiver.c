@@ -9,14 +9,11 @@
 #include <unistd.h>
 #include <time.h>
 
-#define NUMBER_OF_TESTS 5
-#define NUMBER_OF_ALARMS 1
-
 int alarm_flag = 1, count = 1;
 int length = 0, test_no = 0;
-int test = 0;
+test_t test = INV;
 int alarm_times[NUMBER_OF_TESTS] = {1, 2, 3, 4, 5};
-speed_t baud_rates[NUMBER_OF_TESTS] = {B38400, B2400, B4800, B9600, B19200};
+speed_t baud_rates[NUMBER_OF_TESTS] = {B2400, B4800, B9600, B19200, B38400};
 
 void delay_alarm_handler() // atende alarme
 {
@@ -29,7 +26,7 @@ int usage(char **argv)
 {
   printf("Usage: %s <COM>\n", argv[0]);
   printf("Option -t: allows to test effiency. Only one argument allowed, "
-         "don\'t\nforget to use it on both sides, if necessary.\n");
+         "don\'t\nforget to use it on both sides.\n");
   printf("    Arguments: I - vary I message length\n");
   printf("               C - vary baudrate\n");
   printf("               T_prop - vary processing time\n");
@@ -72,10 +69,10 @@ bool handleData(unsigned char *data, FILE *file)
 
 void readFile(int fd)
 {
-  FILE *file;
-  unsigned char filename[MAX_BUF_SIZE + 4];
-  unsigned char fragment[264];
-  unsigned char delim[21];
+  FILE *file; 
+  unsigned char filename[MAX_FILENAME_SIZE];
+  unsigned char fragment[MAX_BUF_SIZE];
+  unsigned char delim[DELIM_SIZE];
   bool end = false;
   int size = 0;
 
@@ -87,11 +84,11 @@ void readFile(int fd)
 
   handleStart(delim, filename);
 
-  file = fopen((char *)"copy.gif", "wb+");
+  file = fopen((char *)filename, "wb+");
 
   while (!end)
   {
-    if (test == 3)
+    if (test == T_prop)
     {
       while (count < NUMBER_OF_ALARMS)
       {
@@ -124,7 +121,7 @@ int receiveFile(char *port)
   struct termios oldtio;
   speed_t baudrate = B38400;
 
-  if (test == 1)
+  if (test == C)
     baudrate = baud_rates[test_no];
 
   printf("rate: %d\n", baudrate);
@@ -150,23 +147,6 @@ int receiveFile(char *port)
   return 0;
 }
 
-int processTestArgument(char **argv)
-{
-  if (strcmp(argv[3], "C") == 0)
-    return 1;
-
-  if (strcmp(argv[3], "I") == 0)
-    return 2;
-
-  if (strcmp(argv[3], "T_prop") == 0)
-    return 3;
-
-  if (strcmp(argv[3], "FER") == 0)
-    return 4;
-
-  return -1;
-}
-
 void setUpDelayAlarmHandler()
 {
   struct sigaction action;
@@ -183,7 +163,7 @@ int main(int argc, char **argv)
 {
   int numTests = 1;
   FILE *stats;
-  time_t begin, end;
+  unsigned long long begin, end;
   double time_spent, R;
 
   if ((argc != 2 && argc != 4) ||
@@ -191,33 +171,35 @@ int main(int argc, char **argv)
     return usage(argv);
   else if (argc == 4 && strcmp(argv[2], "-t") != 0)
     return usage(argv);
-  else if (argc == 4 && ((test = processTestArgument(argv)) == -1))
+  else if (argc == 4 && ((test = processTestArgument(argv, 3)) == INV))
     return usage(argv);
 
   srand(time(NULL));
+  startTime();
   stats = fopen("stats.txt", "w");
 
-  if (test >= 1 && test <= 4)
+  if (test > INV)
   {
     numTests = NUMBER_OF_TESTS;
     fprintf(stats, "TEST TYPE %d\n", test);
 
-    if (test == 3)
+    if (test == T_prop)
       setUpAlarmHandler();
   }
 
   for (; test_no < numTests; test_no++)
   {
-    begin = time(NULL);
-
+    begin = getTime();
     receiveFile(argv[1]);
-
-    end = time(NULL);
-    time_spent = difftime(end, begin);
+    end = getTime();
+    time_spent = (end - begin) / 100000.0;
     R = length * 8.0 / time_spent;
     fprintf(stats, "test no.%d: time taken - %.2f (s) --- R - %f\n", test_no,
             time_spent, R);
   }
+
+  if (test > INV)
+    printf("Please consult test results on stats.txt\n");
 
   fclose(stats);
 

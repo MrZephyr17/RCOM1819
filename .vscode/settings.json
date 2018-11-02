@@ -3,6 +3,7 @@
         "strings.h": "c",
         "stdlib.h": "c",
         "utils.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "string.h": "c"
     }
 }

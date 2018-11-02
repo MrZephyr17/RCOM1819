@@ -9,8 +9,8 @@ Sending a file through serial port to another computer.
 ### Build
 
 ```bash
-gcc -o sender sender.c utils.c protocol.c -Wall -Wextra
-gcc -o receiver receiver.c utils.c protocol.c -Wall -Wextra
+gcc -o sender sender.c utils.c protocol.c -Wall -Wextra -lm
+gcc -o receiver receiver.c utils.c protocol.c -Wall -Wextra -lm
 ```
 
 On the lab's PCs, it may be needed to append `-D_POSIX_C_SOURCE -std=c99`.
