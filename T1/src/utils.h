@@ -17,11 +17,11 @@
   } while (0)
 
 /**
- * @brief 
+ * @brief Searches for byte (unsigned char) in array of bytes (unsigned chars) with name array.
  * 
- * @param byte 
- * @param array 
- * @return true 
- * @return false 
+ * @param byte : unsigned char to be found
+ * @param array : array of bytes we want to check if has byte or not
+ * @return true : if byte exists in array
+ * @return false : otherwise
  */
 bool findByteOnArray(unsigned char byte, unsigned char *array);
