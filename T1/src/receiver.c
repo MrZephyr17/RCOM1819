@@ -6,21 +6,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
 
-int alarm_flag = 1, count = 1;
 int length = 0, test_no = 0;
 test_t test = INV;
-int alarm_times[NUMBER_OF_TESTS] = {1, 2, 3, 4, 5};
+useconds_t delays[NUMBER_OF_TESTS] = {50000, 100000, 150000, 200000, 250000};
 speed_t baud_rates[NUMBER_OF_TESTS] = {B2400, B4800, B9600, B19200, B38400};
+const char *baud_rates_s[NUMBER_OF_TESTS] = {"B2400", "B4800", "B9600", "B19200", "B38400"};
+int messageSizes[NUMBER_OF_TESTS] = {32, 64, 128, 256, 512};
 
-void delay_alarm_handler() // atende alarme
-{
-  printf("alarme # %d\n", count);
-  alarm_flag = 1;
-  count++;
-}
+extern int fail_prob[NUMBER_OF_TESTS];
 
 int usage(char **argv)
 {
@@ -69,7 +66,7 @@ bool handleData(unsigned char *data, FILE *file)
 
 void readFile(int fd)
 {
-  FILE *file; 
+  FILE *file;
   unsigned char filename[MAX_FILENAME_SIZE];
   unsigned char fragment[MAX_BUF_SIZE];
   unsigned char delim[DELIM_SIZE];
@@ -89,16 +86,7 @@ void readFile(int fd)
   while (!end)
   {
     if (test == T_prop)
-    {
-      while (count < NUMBER_OF_ALARMS)
-      {
-        if (alarm_flag)
-        {
-          alarm(alarm_times[test_no]);
-          alarm_flag = 0;
-        }
-      }
-    }
+      usleep(delays[test_no]);
 
     size = llread(fd, fragment);
 
@@ -147,16 +135,36 @@ int receiveFile(char *port)
   return 0;
 }
 
-void setUpDelayAlarmHandler()
+void log_test(FILE *stats, double time_spent, double R)
 {
-  struct sigaction action;
+  char test_value[20];
+  char test_type[50];
 
-  action.sa_handler = alarm_handler;
-  sigemptyset(&action.sa_mask); // all signals are delivered
-  action.sa_flags = 0;
-  sigaction(SIGALRM, &action, NULL);
+  switch (test)
+  {
+  case C:
+    strcpy(test_type, "baudrate (bits/s)");
+    strcpy(test_value, baud_rates_s[test_no]);
+    break;
+  case I:
+    strcpy(test_type, "size (bytes)");
+    sprintf(test_value, "%d", messageSizes[test_no]);
+    break;
+  case FER:
+    strcpy(test_type, "prob (%)");
+    sprintf(test_value, "%d", fail_prob[test_no]);
+    break;
+  case T_prop:
+    strcpy(test_type, "delay (ms)");
+    sprintf(test_value, "%d", delays[test_no] / 1000);
+    break;
+  default:
+    break;
+  }
 
-  debug_print("Installed alarm handler\n");
+  fprintf(stats,
+          "test no.%d: %s - %s --- time taken (s) - %.2f  --- R (bit/s) - %f \n",
+          test_no, test_type, test_value, time_spent, R);
 }
 
 int main(int argc, char **argv)
@@ -165,6 +173,7 @@ int main(int argc, char **argv)
   FILE *stats;
   unsigned long long begin, end;
   double time_spent, R;
+  const char *testNames[] = {"INV", "C", "I", "T_prop", "FER"};
 
   if ((argc != 2 && argc != 4) ||
       ((strcmp("0", argv[1]) != 0) && (strcmp("1", argv[1]) != 0)))
@@ -181,7 +190,7 @@ int main(int argc, char **argv)
   if (test > INV)
   {
     numTests = NUMBER_OF_TESTS;
-    fprintf(stats, "TEST TYPE %d\n", test);
+    fprintf(stats, "TEST TYPE %s\n", testNames[test]);
 
     if (test == T_prop)
       setUpAlarmHandler();
@@ -194,8 +203,7 @@ int main(int argc, char **argv)
     end = getTime();
     time_spent = (end - begin) / 100000.0;
     R = length * 8.0 / time_spent;
-    fprintf(stats, "test no.%d: time taken - %.2f (s) --- R - %f\n", test_no,
-            time_spent, R);
+    log_test(stats, time_spent, R);
   }
 
   if (test > INV)

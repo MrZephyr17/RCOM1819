@@ -3,8 +3,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-void delay_alarm_handler();
-
 /**
  * @brief Prints the program correct usage and gives one example.
  * 
@@ -51,7 +49,7 @@ void readFile(int fd);
 int receiveFile(char *port);
 
 /**
- * @brief Set the Up Delay Alarm Handler object
+ * @brief 
  * 
  */
-void setUpDelayAlarmHandler();
+void log_test(FILE *stats, double time_spent, double R);

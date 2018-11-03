@@ -347,7 +347,7 @@ void receiveData(int fd, unsigned char buf, unsigned char *data, int *i,
 
         if (checkBCC2(bcc2, data, *i - 1) || last == data[1])
         {
-            if (test == 4)
+            if (test == FER)
             {
                 int random = rand() % 100;
 
@@ -441,7 +441,7 @@ int receiveIMessage(int fd, int *size, unsigned char *data)
         case C_RCV:
             if (buf == (A_03 ^ C))
             {
-                if (test == 4)
+                if (test == FER)
                 {
                     int random = rand() % 100;
 
