@@ -53,7 +53,7 @@ typedef enum
 void alarm_handler();
 
 /**
- * @brief Set the Up Alarm Handler object
+ * @brief Setup timeout alarm handler
  * 
  */
 void setUpAlarmHandler();
@@ -92,7 +92,7 @@ int llopen_transmitter(int fd);
 int llopen_receiver(int fd);
 
 /**
- * @brief Set the Up Port object
+ * @brief Sets up serial port communication
  * 
  * @param port 
  * @param fd 

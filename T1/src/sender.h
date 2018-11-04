@@ -78,18 +78,19 @@ unsigned char *getFragment(int seqNum, unsigned char *data, int K);
  * @param fd : Serial Port descriptor
  * @param filename : Name of the file to send
  * @param messageSize : Serial Port descriptor
- * @param fileData : Name of the file to send
- * @param fileSize : Name of the file to send
+ * @param fileData : Data of the file to send
+ * @param fileSize : Size of the file to send
  */
 void writeFile(int fd, char *filename, int messageSize, unsigned char* fileData, off_t fileSize);
 
 /**
- * @brief 
- * 
- * @param fileName 
- * @param port 
- * @param fileData 
- * @param fileSize 
- * @return int 
+ * @brief Using protocol functions, enables serial port communication and
+ * writes the given file
+ *
+ * @param fileName Name of the file to send
+ * @param port COM port
+ * @param fileData Data of the file to send
+ * @param fileSize Size of the file to send
+ * @return int
  */
 int transferFile(char *fileName, char *port, unsigned char *fileData, off_t fileSize);

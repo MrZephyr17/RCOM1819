@@ -42,15 +42,16 @@ bool findByteOnArray(unsigned char byte, unsigned char *array);
 unsigned long long getTime();
 
 /**
- * @brief 
+ * @brief Sets up time measuring variables
  * 
  */
 void startTime();
 
 /**
- * @brief
+ * @brief Processes a -t CLI argument, checking if it's valid.
  *
  * @param argv
+ * @param argNum
  * @return int
  */
 int processTestArgument(char **argv, int argNum);

@@ -41,7 +41,7 @@ bool handleData(unsigned char *data, FILE *file);
 void readFile(int fd);
 
 /**
- * @brief 
+ * @brief Enables protocol communication, receiving a file through the serial port
  * 
  * @param port 
  * @return int 
@@ -49,7 +49,10 @@ void readFile(int fd);
 int receiveFile(char *port);
 
 /**
- * @brief 
+ * @brief Log test results to a text file
  * 
+ * @param stats file
+ * @param time_spent time spent on file transfer
+ * @param R transfer debit
  */
 void log_test(FILE *stats, double time_spent, double R);
