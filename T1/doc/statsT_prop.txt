@@ -1,0 +1,6 @@
+TEST TYPE FER
+test no.0: prob (%) - 2 --- time taken (s) - 4.81  --- R (bit/s) - 18229.110400 --- S - 0.474716
+test no.1: prob (%) - 4 --- time taken (s) - 5.40  --- R (bit/s) - 16262.018963 --- S - 0.423490
+test no.2: prob (%) - 6 --- time taken (s) - 11.30  --- R (bit/s) - 7764.907651 --- S - 0.202211
+test no.3: prob (%) - 8 --- time taken (s) - 17.41  --- R (bit/s) - 5038.536674 --- S - 0.131212
+test no.4: prob (%) - 10 --- time taken (s) - 29.60  --- R (bit/s) - 2964.380407 --- S - 0.077197

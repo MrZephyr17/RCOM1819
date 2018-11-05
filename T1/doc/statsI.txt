@@ -1,0 +1,6 @@
+TEST TYPE I
+test no.0: size (bytes) - 32 --- time taken (s) - 7.80  --- R (bit/s) - 11249.937496 --- S - 0.292967
+test no.1: size (bytes) - 64 --- time taken (s) - 6.01  --- R (bit/s) - 14610.193367 --- S - 0.380474
+test no.2: size (bytes) - 128 --- time taken (s) - 5.46  --- R (bit/s) - 16082.465157 --- S - 0.418814
+test no.3: size (bytes) - 256 --- time taken (s) - 5.18  --- R (bit/s) - 16936.609320 --- S - 0.441058
+test no.4: size (bytes) - 512 --- time taken (s) - 5.03  --- R (bit/s) - 17444.239230 --- S - 0.454277

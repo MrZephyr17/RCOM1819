@@ -1,0 +1,6 @@
+TEST TYPE C
+test no.0: baudrate (bits/s) - B2400 --- time taken (s) - 51.72  --- R (bit/s) - 1696.471504 --- S - 0.706863
+test no.1: baudrate (bits/s) - B4800 --- time taken (s) - 27.23  --- R (bit/s) - 3222.118871 --- S - 0.671275
+test no.2: baudrate (bits/s) - B9600 --- time taken (s) - 14.58  --- R (bit/s) - 6019.267088 --- S - 0.627007
+test no.3: baudrate (bits/s) - B19200 --- time taken (s) - 8.31  --- R (bit/s) - 10554.158262 --- S - 0.549696
+test no.4: baudrate (bits/s) - B38400 --- time taken (s) - 5.15  --- R (bit/s) - 17036.214382 --- S - 0.443651
