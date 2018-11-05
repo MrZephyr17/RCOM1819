@@ -1,3 +1,6 @@
+#define _POSIX_C_SOURCE 199309L
+
+
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>

@@ -1,3 +1,5 @@
+
+
 #include "receiver.h"
 #include "protocol.h"
 #include "utils.h"
@@ -8,12 +10,15 @@
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
+
+#define __USE_XOPEN
 #include <unistd.h>
 
 int length = 0, test_no = 0;
 test_t test = INV;
 useconds_t delays[NUMBER_OF_TESTS] = {50000, 100000, 150000, 200000, 250000};
 speed_t baud_rates[NUMBER_OF_TESTS] = {B2400, B4800, B9600, B19200, B38400};
+int baud_rates_i[NUMBER_OF_TESTS] = {2400, 4800, 9600, 19200, 38400};
 const char *baud_rates_s[NUMBER_OF_TESTS] = {"B2400", "B4800", "B9600", "B19200", "B38400"};
 int messageSizes[NUMBER_OF_TESTS] = {32, 64, 128, 256, 512};
 
@@ -139,7 +144,7 @@ void log_test(FILE *stats, double time_spent, double R)
 {
   char test_value[20];
   char test_type[50];
-
+  
   switch (test)
   {
   case C:
@@ -162,9 +167,11 @@ void log_test(FILE *stats, double time_spent, double R)
     break;
   }
 
+  double S = test == C ? R/baud_rates_i[test_no] : R/38400;
+
   fprintf(stats,
-          "test no.%d: %s - %s --- time taken (s) - %.2f  --- R (bit/s) - %f \n",
-          test_no, test_type, test_value, time_spent, R);
+          "test no.%d: %s - %s --- time taken (s) - %.2f  --- R (bit/s) - %f --- S - %f\n",
+          test_no, test_type, test_value, time_spent, R, S);
 }
 
 int main(int argc, char **argv)
