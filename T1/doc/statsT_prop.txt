@@ -1,6 +1,6 @@
-TEST TYPE FER
-test no.0: prob (%) - 2 --- time taken (s) - 4.81  --- R (bit/s) - 18229.110400 --- S - 0.474716
-test no.1: prob (%) - 4 --- time taken (s) - 5.40  --- R (bit/s) - 16262.018963 --- S - 0.423490
-test no.2: prob (%) - 6 --- time taken (s) - 11.30  --- R (bit/s) - 7764.907651 --- S - 0.202211
-test no.3: prob (%) - 8 --- time taken (s) - 17.41  --- R (bit/s) - 5038.536674 --- S - 0.131212
-test no.4: prob (%) - 10 --- time taken (s) - 29.60  --- R (bit/s) - 2964.380407 --- S - 0.077197
+TEST TYPE T_prop
+test no.0: delay (ms) - 50 --- time taken (s) - 4.40  --- R (bit/s) - 19934.071077 --- S - 0.519116
+test no.1: delay (ms) - 100 --- time taken (s) - 6.53  --- R (bit/s) - 13432.328583 --- S - 0.349800
+test no.2: delay (ms) - 150 --- time taken (s) - 8.63  --- R (bit/s) - 10163.660604 --- S - 0.264679
+test no.3: delay (ms) - 200 --- time taken (s) - 11.03  --- R (bit/s) - 7953.178634 --- S - 0.207114
+test no.4: delay (ms) - 250 --- time taken (s) - 13.04  --- R (bit/s) - 6731.146897 --- S - 0.175290
