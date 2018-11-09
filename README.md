@@ -15,3 +15,14 @@ gcc -o receiver receiver.c utils.c protocol.c -Wall -Wextra -lm
 
 On the lab's PCs, it may be needed to append `-D _BSD_SOURCE -std=c99`.
 In order to see debug messages, append `-D DEBUG`.
+
+## Project 2
+
+Implementing a download application with File Transfer Protocol, and doing experiments
+on RCOM lab.
+
+### Build
+
+```bash
+gcc -o download download.c -Wall -Wextra
+```

@@ -5,6 +5,9 @@
         "utils.h": "c",
         "time.h": "c",
         "string.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "type_traits": "c",
+        "socket.h": "c",
+        "stdbool.h": "c"
     }
 }
