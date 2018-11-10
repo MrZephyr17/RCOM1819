@@ -5,7 +5,6 @@
 #define SOCKET_BUF_SIZE 1000
 #define REPLY_CODE_SIZE 3
 #define SERVER_PORT 21
-#define SERVER_ADDR "192.168.28.96"
 
 typedef struct
 {
@@ -35,6 +34,17 @@ typedef enum
     PERM_NEGATIVE_COMP
 } reply_type_t;
 
+#ifdef DEBUG
+#define DEBUG_TEST 1
+#else
+#define DEBUG_TEST 0
+#endif
+
+#define debug_print(fmt, ...)                                                  \
+  do {                                                                         \
+    if (DEBUG_TEST)                                                            \
+      fprintf(stderr, fmt, ##__VA_ARGS__);                                     \
+  } while (0)
 
 int usage(char* argv[]);
 
@@ -42,7 +52,7 @@ int parseArgument(char *argument, info_t *info);
 
 char *getServerIp(info_t info);
 
-void createSocketTCP(char *server_ip);
+int createSocketTCP(char *server_ip, int server_port);
 
 int readServerReply(int socketFd, char *reply);
 

@@ -23,13 +23,10 @@ int usage(char *argv[])
 
 int parseArgument(char *argument, info_t *info)
 {
-    char start[7];
-    strncpy(start, argument, 6);
-
     char *sep;
     int index1 = 6, index2;
 
-    if (strcmp("ftp://", start) != 0)
+    if (strncmp("ftp://", argument, 6) != 0)
         return 1;
 
     if ((sep = strchr(argument + 6, ':')) != NULL)
@@ -74,15 +71,13 @@ char *getServerIp(info_t info)
         exit(1);
     }
 
-    return inet_ntoa(*((struct in_addr *)h->h_addr_list));
+    return inet_ntoa(*((struct in_addr *)h->h_addr_list[0]));
 }
 
-void createSocketTCP(char *server_ip)
+int createSocketTCP(char *server_ip, int server_port)
 {
-    int sockfd;
+    int socketFd;
     struct sockaddr_in server_addr;
-    char buf[] = "Mensagem de teste na travessia da pilha TCP/IP\n";
-    int bytes;
 
     /*server address handling*/
     bzero((char *)&server_addr, sizeof(server_addr));
@@ -90,28 +85,24 @@ void createSocketTCP(char *server_ip)
     server_addr.sin_addr.s_addr =
         inet_addr(server_ip); /*32 bit Internet address network byte ordered*/
     server_addr.sin_port =
-        htons(SERVER_PORT); /*server TCP port must be network byte ordered */
+        htons(server_port); /*server TCP port must be network byte ordered */
 
     /*open an TCP socket*/
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if ((socketFd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         perror("socket()");
         exit(0);
     }
 
     /*connect to the server*/
-    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) <
+    if (connect(socketFd, (struct sockaddr *)&server_addr, sizeof(server_addr)) <
         0)
     {
         perror("connect()");
         exit(0);
     }
 
-    /*send a string to the server*/
-    bytes = write(sockfd, buf, strlen(buf));
-    printf("Bytes escritos %d\n", bytes);
-
-    close(sockfd);
+    return socketFd;
 }
 
 int readServerReply(int socketFd, char *reply)
@@ -169,19 +160,16 @@ int readServerReply(int socketFd, char *reply)
 
 int getServerPort(int socketFd)
 {
-    char reply[MAX_REPLY_SIZE];
     int res = 0;
     state_t state = WAIT_FOR_PORT;
     char c;
     char first_byte[4], second_byte[4];
     int numCommas = 0, i = 0;
 
-    if ((res = readServerReply(socketFd, reply)) != 0)
-        return 1;
-
     while (state != END)
     {
-        res = read(socketFd, &c, 1);
+        if ((res = read(socketFd, &c, 1)) <= 0)
+            continue;
 
         switch (state)
         {
@@ -228,7 +216,8 @@ int sendCommand(int socketFd, char *command, char *argument)
     reply_type_t type;
 
     write(socketFd, command, strlen(command));
-    write(socketFd, argument, strlen(argument));
+    if (argument != NULL)
+        write(socketFd, argument, strlen(argument));
     write(socketFd, "\n", 1);
 
     while (true)
@@ -248,7 +237,8 @@ int sendCommand(int socketFd, char *command, char *argument)
             return 1;
         case TRANS_NEGATIVE_COMP:
             write(socketFd, command, strlen(command));
-            write(socketFd, argument, strlen(argument));
+            if (argument != NULL)
+                write(socketFd, argument, strlen(argument));
             write(socketFd, "\n", 1);
             break;
         case PERM_NEGATIVE_COMP:
@@ -277,13 +267,46 @@ void createFile(int fd, char *filename)
 int main(int argc, char *argv[])
 {
     info_t info;
+    char *server_ip;
+    char reply[MAX_REPLY_SIZE];
+    int fd1, fd2, res, port;
 
     if (argc != 2 || parseArgument(argv[1], &info) != 0)
         return usage(argv);
 
-    char *server_ip = getServerIp(info);
+    server_ip = getServerIp(info);
 
-    createSocketTCP(server_ip);
+    fd1 = createSocketTCP(server_ip, SERVER_PORT);
+    readServerReply(fd1, reply);
+
+    if (reply[0] == '2')
+        printf("Connection established!\n");
+
+    res = sendCommand(fd1, "user ", info.user);
+    debug_print("aqui\n");
+    if (res == 1)
+    {
+        res = sendCommand(fd1, "pass ", info.pass);
+    }
+    debug_print("aqui\n");
+
+    res = sendCommand(fd1, "pasv", NULL);
+
+    port = getServerPort(fd1);
+    debug_print("aqui\n");
+
+    fd2 = createSocketTCP(server_ip, port);
+    readServerReply(fd2, reply);
+
+    res = sendCommand(fd1, "retr ", info.filePath);
+
+    if (res == 0)
+    {
+        createFile(fd2, info.filePath);
+    }
+
+    close(fd1);
+    close(fd2);
 
     return 0;
 }
