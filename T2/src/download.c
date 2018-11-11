@@ -1,8 +1,10 @@
 #include <arpa/inet.h>
+#include <ctype.h>
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,8 +12,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdbool.h>
-#include <ctype.h>
 
 #include "download.h"
 
@@ -36,6 +36,7 @@ int parseArgument(char *argument, info_t *info)
         index = (int)(sep - argument);
 
         strncpy(info->user, argument + 6, index - 6);
+        info->user[index - 6] = '\0';
 
         if ((sep = strchr(argument, '@')) == NULL)
             return 1;
@@ -43,6 +44,7 @@ int parseArgument(char *argument, info_t *info)
         int new_index = (int)(sep - argument);
         index++;
         strncpy(info->pass, argument + index, new_index - index);
+        info->pass[new_index - index] = '\0';
 
         index1 = ++new_index;
     }
@@ -55,8 +57,10 @@ int parseArgument(char *argument, info_t *info)
     index2 = (int)(sep - argument);
 
     strncpy(info->serverName, argument + index1, index2 - index1);
+    info->serverName[index2 - index1] = '\0';
     index2++;
     strncpy(info->filePath, argument + index2, strlen(argument) - index2);
+    info->filePath[strlen(argument) - index1] = '\0';
 
     return 0;
 }
@@ -173,6 +177,23 @@ int getServerPort(int socketFd)
 
         switch (state)
         {
+        case READ_CODE:
+            if (c == ' ')
+            {
+                if (i != 3)
+                {
+                    printf(" > Error receiving response code\n");
+                    return -1;
+                }
+                i = 0;
+                state = WAIT_FOR_PORT;
+            }
+            else
+            {
+                i++;
+            }
+            break;
+            break;
         case WAIT_FOR_PORT:
             if (c == ',')
                 numCommas++;
@@ -280,33 +301,44 @@ int main(int argc, char *argv[])
     readServerReply(fd1, reply);
 
     if (reply[0] == '2')
-        printf("Connection established!\n");
+        printf(" > Connection established!\n");
+    else
+    {
+        printf(" > Couldn't connect! Exiting.\n");
+        exit(1);
+    }
 
+    printf(" > Sending user\n");
     res = sendCommand(fd1, "user ", info.user);
-    debug_print("aqui\n");
+
     if (res == 1)
     {
+        printf(" > Sending pass\n");
         res = sendCommand(fd1, "pass ", info.pass);
     }
-    debug_print("aqui\n");
+    else
+    {
+        printf(" > Error sending username! Exiting.\n");
+        exit(1);
+    }
 
-    res = sendCommand(fd1, "pasv", NULL);
-
+    write(fd1, "pasv\n", 5);
     port = getServerPort(fd1);
-    debug_print("aqui\n");
 
     fd2 = createSocketTCP(server_ip, port);
-    readServerReply(fd2, reply);
 
+    printf(" > Sending retr\n");
     res = sendCommand(fd1, "retr ", info.filePath);
 
     if (res == 0)
     {
+        printf(" > Downloading file...\n");
         createFile(fd2, info.filePath);
     }
 
     close(fd1);
     close(fd2);
 
+    printf(" > All done! Exiting now\n");
     return 0;
 }

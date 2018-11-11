@@ -28,8 +28,8 @@ typedef enum
 typedef enum
 {
     POSITIVE_PRE = 1,
-    POSITIVE_COMP,
     POSITIVE_INT,
+    POSITIVE_COMP,
     TRANS_NEGATIVE_COMP,
     PERM_NEGATIVE_COMP
 } reply_type_t;
@@ -40,13 +40,14 @@ typedef enum
 #define DEBUG_TEST 0
 #endif
 
-#define debug_print(fmt, ...)                                                  \
-  do {                                                                         \
-    if (DEBUG_TEST)                                                            \
-      fprintf(stderr, fmt, ##__VA_ARGS__);                                     \
-  } while (0)
+#define debug_print(fmt, ...)                    \
+    do                                           \
+    {                                            \
+        if (DEBUG_TEST)                          \
+            fprintf(stderr, fmt, ##__VA_ARGS__); \
+    } while (0)
 
-int usage(char* argv[]);
+int usage(char *argv[]);
 
 int parseArgument(char *argument, info_t *info);
 
