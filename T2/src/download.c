@@ -34,7 +34,6 @@ int parseArgument(char *argument, info_t *info)
         int index;
 
         index = (int)(sep - argument);
-
         strncpy(info->user, argument + 6, index - 6);
         info->user[index - 6] = '\0';
 
@@ -50,6 +49,8 @@ int parseArgument(char *argument, info_t *info)
     }
     else if ((sep = strchr(argument, '@')) != NULL)
         return 1;
+    else
+        strncpy(info->user, "placeholder", 11);
 
     if ((sep = strchr(argument + 6, '/')) == NULL)
         return 1;
@@ -308,6 +309,14 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    if(strncmp(info.user, "placeholder", 11) == 0){
+        printf(" > Please specify user and password.\n");
+        printf(" > User: ");
+        scanf("%s", info.user);
+        printf(" > Password: ");
+        scanf("%s", info.pass);
+    }
+
     printf(" > Sending user\n");
     res = sendCommand(fd1, "user ", info.user);
 
@@ -335,6 +344,9 @@ int main(int argc, char *argv[])
         printf(" > Downloading file...\n");
         createFile(fd2, info.filePath);
     }
+
+    printf(" > Quiting connection\n");
+    write(fd1, "quit\n", 5);
 
     close(fd1);
     close(fd2);
