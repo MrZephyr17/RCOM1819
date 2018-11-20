@@ -1,6 +1,7 @@
 # RCOM1819
 
 Projects for FEUP MIEIC's curricular unit RCOM.
+NEVER USE THE NAME OF PROFESSOR VIDAL IN VAIN
 
 ## Project 1
 
