@@ -16,6 +16,56 @@
 
 \section{Introdução}
 \section{Aplicação \textit{download}}
+\subsection{Arquitetura}
+
+A aplicação tem o objetivo de fazer o \textit{download} de um ficheiro recorrendo ao protocolo
+FTP (File Transfer Protocol). Para tal, recebe como argumento um link FTP, que deve conter
+os seguintes campos:
+
+\begin{itemize}
+\item Nome de utilizador
+\item Palavra-passe
+\item Endereço do anfitrião
+\item Caminho do ficheiro
+\end{itemize}
+
+Caso os dados do utilizador não sejam fornecidos, o programa pedi-los-á posteriormente.
+Após a análise do argumento, o programa cria a ligação através de duas funções cujo código 
+é já fornecido:
+
+\begin{itemize}
+\item \mintinline{C}{char *getServerIp(info_t info)}
+\item \mintinline{C}{int createSocketTCP(char *server_ip, int server_port)}
+\end{itemize}
+
+Em caso de conexão bem sucedida, o programa segue os seguintes passos:
+\begin{enumerate}
+\item Enviar \mintinline{bash}{USER} e \mintinline{bash}{PASS}
+\item Entrar em modo passivo \mintinline{bash}{pasv}
+\item Criar novo socket TCP
+\item Enviar comando \mintinline{bash}{RETR}
+\item Transferir o ficheiropasv
+\item Terminar a conexão com \mintinline{bash}{QUIT}
+\end{enumerate}
+
+Esta estrutura é apoiada nas seguintes funções:
+\begin{itemize}
+\item \mintinline{C}{sendCommand}
+\item \mintinline{C}{readServerReply}
+\item \mintinline{C}{createFile}
+\end{itemize}
+
+E nas seguintes estruturas:
+
+\begin{itemize}
+\item \mintinline{C}{struct state_t}
+\item \mintinline{C}{struct reply_type_t}
+\item \mintinline{C}{struct info_t}
+\end{itemize}
+
+
+Ao longo do programa são impressas mensagens para informar o utilizador do avanço do processo.
+\subsection{Análise de um \textit{download} com sucesso}
 \section{Configuração e análise de redes}
 \subsection{Experiência 1 - Configurar uma rede IP}
 \subsection{Experiência 2 - Implementar duas VLANs num \textit{switch}}
