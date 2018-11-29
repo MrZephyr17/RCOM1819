@@ -19,7 +19,7 @@
 \subsection{Arquitetura}
 
 A aplicação tem o objetivo de fazer o \textit{download} de um ficheiro recorrendo ao protocolo
-FTP (File Transfer Protocol). Para tal, recebe como argumento um link FTP, que deve conter
+FTP (\textit{File Transfer Protocol}). Para tal, recebe como argumento um link FTP, que deve conter
 os seguintes campos:
 
 \begin{itemize}
@@ -44,23 +44,26 @@ Em caso de conexão bem sucedida, o programa segue os seguintes passos:
 \item Entrar em modo passivo \mintinline{bash}{pasv}
 \item Criar novo socket TCP
 \item Enviar comando \mintinline{bash}{RETR}
-\item Transferir o ficheiropasv
+\item Transferir o ficheiro
 \item Terminar a conexão com \mintinline{bash}{QUIT}
 \end{enumerate}
 
-Esta estrutura é apoiada nas seguintes funções:
+Esta estrutura é apoiada nas seguintes funções, cuja documentação pode ser encontrada nos anexos:
 \begin{itemize}
-\item \mintinline{C}{sendCommand}
-\item \mintinline{C}{readServerReply}
-\item \mintinline{C}{createFile}
+\item \mintinline{C}{int sendCommand(int socketFd, char *command, char *argument)}
+\item \mintinline{C}{int readServerReply(int socketFd, char *reply)}
+\item \mintinline{C}{void createFile(int fd, char *filename)}
 \end{itemize}
 
 E nas seguintes estruturas:
 
 \begin{itemize}
 \item \mintinline{C}{struct state_t}
+\item[] Representa o estado da leitura da resposta aos comandos enviados.
 \item \mintinline{C}{struct reply_type_t}
+\item[] Representa o tipo da resposta do servidor aos comandos enviados. 
 \item \mintinline{C}{struct info_t}
+\item[] Guarda informação fornecida no argumento do programa. 
 \end{itemize}
 
 

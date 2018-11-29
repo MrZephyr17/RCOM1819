@@ -34,31 +34,71 @@ typedef enum
     PERM_NEGATIVE_COMP
 } reply_type_t;
 
-#ifdef DEBUG
-#define DEBUG_TEST 1
-#else
-#define DEBUG_TEST 0
-#endif
-
-#define debug_print(fmt, ...)                    \
-    do                                           \
-    {                                            \
-        if (DEBUG_TEST)                          \
-            fprintf(stderr, fmt, ##__VA_ARGS__); \
-    } while (0)
-
+/**
+ * @brief 
+ * 
+ * @param argv 
+ * @return int 
+ */
 int usage(char *argv[]);
 
+/**
+ * @brief 
+ * 
+ * @param argument 
+ * @param info 
+ * @return int 
+ */
 int parseArgument(char *argument, info_t *info);
 
+/**
+ * @brief Get the Server Ip object
+ * 
+ * @param info 
+ * @return char* 
+ */
 char *getServerIp(info_t info);
 
+/**
+ * @brief Create a Socket T C P object
+ * 
+ * @param server_ip 
+ * @param server_port 
+ * @return int 
+ */
 int createSocketTCP(char *server_ip, int server_port);
 
+/**
+ * @brief 
+ * 
+ * @param socketFd 
+ * @param reply 
+ * @return int 
+ */
 int readServerReply(int socketFd, char *reply);
 
+/**
+ * @brief
+ * 
+ * @param socketFd 
+ * @return int 
+ */
 int getServerPort(int socketFd);
 
+/**
+ * @brief 
+ * 
+ * @param socketFd 
+ * @param command 
+ * @param argument 
+ * @return int 
+ */
 int sendCommand(int socketFd, char *command, char *argument);
 
+/**
+ * @brief 
+ * 
+ * @param fd 
+ * @param filename 
+ */
 void createFile(int fd, char *filename);
