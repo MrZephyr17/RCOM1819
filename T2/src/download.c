@@ -1,18 +1,19 @@
 #include <arpa/inet.h>
+#include <netinet/in.h>
+
+#include <sys/socket.h>
+#include <sys/types.h>
+
 #include <ctype.h>
 #include <errno.h>
 #include <netdb.h>
-#include <netinet/in.h>
 #include <signal.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
-
+ 
 #include "download.h"
 
 int usage(char *argv[])
@@ -21,13 +22,13 @@ int usage(char *argv[])
     return 1;
 }
 
-int parseArgument(char *argument, info_t *info)
+bool parseArgument(char *argument, info_t *info)
 {
     char *sep;
     int index1 = 6, index2;
 
     if (strncmp("ftp://", argument, 6) != 0)
-        return 1;
+        return false;
 
     if ((sep = strchr(argument + 6, ':')) != NULL)
     {
@@ -38,7 +39,7 @@ int parseArgument(char *argument, info_t *info)
         info->user[index - 6] = '\0';
 
         if ((sep = strchr(argument, '@')) == NULL)
-            return 1;
+            return false;
 
         int new_index = (int)(sep - argument);
         index++;
@@ -48,12 +49,12 @@ int parseArgument(char *argument, info_t *info)
         index1 = ++new_index;
     }
     else if ((sep = strchr(argument, '@')) != NULL)
-        return 1;
+        return false;
     else
         strncpy(info->user, "placeholder", 11);
 
     if ((sep = strchr(argument + 6, '/')) == NULL)
-        return 1;
+        return false;
 
     index2 = (int)(sep - argument);
 
@@ -63,14 +64,14 @@ int parseArgument(char *argument, info_t *info)
     strncpy(info->filePath, argument + index2, strlen(argument) - index2);
     info->filePath[strlen(argument) - index1] = '\0';
 
-    return 0;
+    return true;
 }
 
-char *getServerIp(info_t info)
+char *getServerIp(const char* name) 
 {
     struct hostent *h;
 
-    if ((h = gethostbyname(info.serverName)) == NULL)
+    if ((h = gethostbyname(name)) == NULL) 
     {
         herror("gethostbyname");
         exit(1);
@@ -110,7 +111,7 @@ int createSocketTCP(char *server_ip, int server_port)
     return socketFd;
 }
 
-int readServerReply(int socketFd, char *reply)
+void readServerReply(int socketFd, char *reply)
 {
     char c;
     int res = 0, i = 0;
@@ -159,8 +160,6 @@ int readServerReply(int socketFd, char *reply)
             break;
         }
     }
-
-    return 0;
 }
 
 int getServerPort(int socketFd)
@@ -233,7 +232,6 @@ int getServerPort(int socketFd)
 
 int sendCommand(int socketFd, char *command, char *argument)
 {
-    int res = 0;
     char reply[REPLY_CODE_SIZE];
     reply_type_t type;
 
@@ -244,8 +242,7 @@ int sendCommand(int socketFd, char *command, char *argument)
 
     while (true)
     {
-        if ((res = readServerReply(socketFd, reply)) != 0)
-            return 1;
+        readServerReply(socketFd, reply);
 
         type = reply[0] - '0';
 
@@ -296,7 +293,7 @@ int main(int argc, char *argv[])
     if (argc != 2 || parseArgument(argv[1], &info) != 0)
         return usage(argv);
 
-    server_ip = getServerIp(info);
+    server_ip = getServerIp(info.serverName);
 
     fd1 = createSocketTCP(server_ip, SERVER_PORT);
     readServerReply(fd1, reply);

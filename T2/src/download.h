@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+
 #define MAX_BUF_SIZE 100
 #define MAX_REPLY_SIZE 400
 #define SOCKET_BUF_SIZE 1000
@@ -35,70 +37,76 @@ typedef enum
 } reply_type_t;
 
 /**
- * @brief 
+ * @brief Prints a message that shows how to run the program.
  * 
- * @param argv 
- * @return int 
+ * @param argv array of arguments passed from the command line
+ * 
+ * @return always return 1
  */
 int usage(char *argv[]);
 
 /**
- * @brief 
+ * @brief Parses the argument passed to the program, retrieving user information.
  * 
- * @param argument 
- * @param info 
- * @return int 
+ * @param argument argument from the command line, supposedly an FTP link
+ * @param info structure that holds user and server info
+ * 
+ * @return true if argument was successfully read, false otherwise 
  */
-int parseArgument(char *argument, info_t *info);
+bool parseArgument(char *argument, info_t *info);
 
 /**
- * @brief Get the Server Ip object
+ * @brief Gets a server ip from a host name
  * 
- * @param info 
- * @return char* 
+ * @param name host name
+ * 
+ * @return server ip 
  */
-char *getServerIp(info_t info);
+char *getServerIp(const char* name);
 
 /**
- * @brief Create a Socket T C P object
+ * @brief Creates a TCP socket, returning its respective file descriptor.
  * 
  * @param server_ip 
  * @param server_port 
- * @return int 
+ * 
+ * @return socket's file descriptor 
  */
 int createSocketTCP(char *server_ip, int server_port);
 
 /**
- * @brief 
+ * @brief Reads the server reply to an FTP command, returning it through the reply argument.
  * 
- * @param socketFd 
- * @param reply 
- * @return int 
+ * @param socketFd socket's file descriptor
+ * @param reply numeric descriptor of the server reply
  */
-int readServerReply(int socketFd, char *reply);
+void readServerReply(int socketFd, char *reply);
 
 /**
- * @brief
+ * @brief Gets the server port after the program issues pasv command.
  * 
- * @param socketFd 
- * @return int 
+ * @param socketFd socket's file descriptor
+ * 
+ * @return the server port
  */
 int getServerPort(int socketFd);
 
 /**
- * @brief 
+ * @brief Sends and FTP command along with its argument (if applicable) and reads the server reply.
  * 
- * @param socketFd 
- * @param command 
- * @param argument 
- * @return int 
+ * 
+ * @param socketFd socket's file descriptor
+ * @param command FTP command
+ * @param argument command's argument, if any
+ * 
+ * @return 0 for POSITIVE_INT, 1 for POSITIVE_COMP and -1 for PERM_NEGATIVE_COMP
  */
 int sendCommand(int socketFd, char *command, char *argument);
 
 /**
- * @brief 
+ * @brief Called after sending RETR command, reads data from the socket and creates a local file.
  * 
- * @param fd 
- * @param filename 
+ * @param fd second socket's file descriptor
+ * @param filename name of the file to be retrieved
  */
 void createFile(int fd, char *filename);
