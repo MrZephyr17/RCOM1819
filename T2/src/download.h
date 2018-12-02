@@ -12,6 +12,7 @@ typedef struct
 {
     char serverName[MAX_BUF_SIZE];
     char filePath[MAX_BUF_SIZE];
+    char fileName[MAX_BUF_SIZE];
     char user[MAX_BUF_SIZE];
     char pass[MAX_BUF_SIZE];
 } info_t;

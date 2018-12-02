@@ -25,6 +25,7 @@ int usage(char *argv[])
 bool parseArgument(char *argument, info_t *info)
 {
     char *sep;
+    char* lastSep;
     int index1 = 6, index2;
 
     if (strncmp("ftp://", argument, 6) != 0)
@@ -62,7 +63,11 @@ bool parseArgument(char *argument, info_t *info)
     info->serverName[index2 - index1] = '\0';
     index2++;
     strncpy(info->filePath, argument + index2, strlen(argument) - index2);
-    info->filePath[strlen(argument) - index1] = '\0';
+    info->filePath[strlen(argument) - index2] = '\0';
+
+    lastSep = strrchr(argument, '/');
+    strcpy(info->fileName, lastSep + 1);
+    info->fileName[strlen(lastSep)] = '\0';
 
     return true;
 }
@@ -290,7 +295,7 @@ int main(int argc, char *argv[])
     char reply[MAX_REPLY_SIZE];
     int fd1, fd2, res, port;
 
-    if (argc != 2 || parseArgument(argv[1], &info) != 0)
+    if (argc != 2 || !parseArgument(argv[1], &info))
         return usage(argv);
 
     server_ip = getServerIp(info.serverName);
@@ -339,7 +344,7 @@ int main(int argc, char *argv[])
     if (res == 0)
     {
         printf(" > Downloading file...\n");
-        createFile(fd2, info.filePath);
+        createFile(fd2, info.fileName);
     }
 
     printf(" > Quiting connection\n");
