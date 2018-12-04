@@ -73,13 +73,72 @@ Ao longo do programa são impressas mensagens para informar o utilizador do avan
 \subsection{Exemplo de um \textit{download} com sucesso}
 Depois de apresentação colocar aqui
 \section{Configuração e análise de redes}
-Responder às perguntas dos slides
 \subsection{Experiência 1 - Configurar uma rede IP}
+\begin{enumerate}
+\item O que são os pacotes ARP e para que são usados?
+
+\item O que são os endereços MAC e IP dos pacotes ARP e porquê?
+
+\item Que pacotes gera o comando \mintedinline{bash}{ping}?
+
+\item O que são os endereços MAC e IP dos pacotes \mintedinline{bash}{ping}?
+
+\item Como determinar se um quadro \textit{Ethernet} recebido é ARP, IP, ICMP?
+
+\item Como determinar o tamanho de um quadro recebido?
+
+\item Qual é a interface \textit{loopback} e porque é importante?
+\end{enumerate}
 \subsection{Experiência 2 - Implementar duas VLANs num \textit{switch}}
-\subsection{Experiência 3 - Configurar um router em Linux}
-\subsection{Experiência 4 - Configurar um router comercial e implementar NAT}
+\begin{enumerate}
+\item Como configurar a \textit{vlan10}?
+
+\item Quantos domínios de transmissão existem? Como se pode concluir a partir dos registos?
+\end{enumerate}
+\subsection{Experiência 3 - Configurar um \textit{router} em Linux}
+\begin{enumerate}
+\item Que rotas existem nos \textit{tuxes}? Qual o seu significado?
+
+\item Que informação contém uma entrada da tabela de encaminhamento?
+
+\item Que mensagens ARP e endereços MAC associados são observados, e porquê?
+
+\item Que pacotes ICMP são observados e porquê?
+
+\item O que são os endereços IP e MAC associados aos pacotes ICMP e porquê?
+
+\subsection{Experiência 4 - Configurar um \textit{router} comercial e implementar NAT}
+\begin{enumerate}
+\item Como configurar uma rota estática num \textit{router} comercial?
+
+\item Quais são os caminhos seguidos pelos pacotes nas experiências feitas e porquê?
+
+\item Como configurar NAT num \textit{router} comercial?
+
+\item O que faz NAT?
+\end{enumerate}
 \subsection{Experiência 5 - DNS}
+\begin{enumerate}
+\item Como configurar o servico DNS num anfitrião?
+
+\item Que pacotes são trocados por DNS e que informação é transportada?
+\end{enumerate}
 \subsection{Experiência 6 - Conexões TCP}
+\begin{enumerate}
+\item Quantas conexões TCP são abertas pela aplicação FTP?
+
+\item Em que conexão é transportada a informação de controlo FTP?
+
+\item Quais são as fases de uma conexão FTP?
+
+\item Como funciona o mecanismo ARQ TCP? Quais são os campos TCP relevantes? Que informação relevante pode ser observada nos
+registos?
+
+\item Como funciona o mecanismo de congestionamento de controlo TCP? Quais são os campos relevantes? Como é que
+a taxa de transferência da conexão de dados evoluiu ao longo do tempo? Está de acordo com o mecanismo de congestionamento de controlo TCP?
+
+\item A taxa de transferência de uma conexão de dados TCP é perturbada pelo aparecimento de uma segunda conexão TCP? Como?
+\end{enumerate}
 \section{Conclusão}
 \section{Referências}
 \section{Anexos}
