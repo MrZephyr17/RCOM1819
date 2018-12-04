@@ -79,9 +79,9 @@ Depois de apresentação colocar aqui
 
 \item O que são os endereços MAC e IP dos pacotes ARP e porquê?
 
-\item Que pacotes gera o comando \mintedinline{bash}{ping}?
+\item Que pacotes gera o comando \mintinline{bash}{ping}?
 
-\item O que são os endereços MAC e IP dos pacotes \mintedinline{bash}{ping}?
+\item O que são os endereços MAC e IP dos pacotes \mintinline{bash}{ping}?
 
 \item Como determinar se um quadro \textit{Ethernet} recebido é ARP, IP, ICMP?
 
@@ -106,7 +106,7 @@ Depois de apresentação colocar aqui
 \item Que pacotes ICMP são observados e porquê?
 
 \item O que são os endereços IP e MAC associados aos pacotes ICMP e porquê?
-
+\end{enumerate}
 \subsection{Experiência 4 - Configurar um \textit{router} comercial e implementar NAT}
 \begin{enumerate}
 \item Como configurar uma rota estática num \textit{router} comercial?
@@ -261,7 +261,6 @@ void createFile(int fd, char *filename);
 \end{minted}
 
 \textbf{download.c}
-
 \begin{minted}{C}
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -587,7 +586,7 @@ int main(int argc, char *argv[])
     printf(" > Sending user\n");
     res = sendCommand(fd1, "user ", info.user);
 
-    if (res == POSITIVE_INT || res == POSITIVE_COMP)
+    if (res == 0 || res == 1)
     {
         printf(" > Sending pass\n");
         res = sendCommand(fd1, "pass ", info.pass);
@@ -606,7 +605,7 @@ int main(int argc, char *argv[])
     printf(" > Sending retr\n");
     res = sendCommand(fd1, "retr ", info.filePath);
 
-    if (res == POSITIVE_INT)
+    if (res == 0)
     {
         printf(" > Downloading file...\n");
         createFile(fd2, info.fileName);
@@ -622,7 +621,6 @@ int main(int argc, char *argv[])
     return 0;
 }    
 \end{minted}
-
 \subsection{Comandos de configuração}
 \subsection{\textit{Logs} registados}
 

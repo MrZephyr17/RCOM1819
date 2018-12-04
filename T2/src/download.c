@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
     printf(" > Sending user\n");
     res = sendCommand(fd1, "user ", info.user);
 
-    if (res == POSITIVE_INT || res == POSITIVE_COMP)
+    if (res == 0 || res == 1)
     {
         printf(" > Sending pass\n");
         res = sendCommand(fd1, "pass ", info.pass);
@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
     printf(" > Sending retr\n");
     res = sendCommand(fd1, "retr ", info.filePath);
 
-    if (res == POSITIVE_INT)
+    if (res == 0)
     {
         printf(" > Downloading file...\n");
         createFile(fd2, info.fileName);
