@@ -278,7 +278,7 @@ void createFile(int fd, char *filename);
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
- 
+    
 #include "download.h"
 
 int usage(char *argv[])
@@ -587,7 +587,7 @@ int main(int argc, char *argv[])
     printf(" > Sending user\n");
     res = sendCommand(fd1, "user ", info.user);
 
-    if (res == 1)
+    if (res == POSITIVE_INT || res == POSITIVE_COMP)
     {
         printf(" > Sending pass\n");
         res = sendCommand(fd1, "pass ", info.pass);
@@ -606,7 +606,7 @@ int main(int argc, char *argv[])
     printf(" > Sending retr\n");
     res = sendCommand(fd1, "retr ", info.filePath);
 
-    if (res == 0)
+    if (res == POSITIVE_INT)
     {
         printf(" > Downloading file...\n");
         createFile(fd2, info.fileName);
@@ -620,7 +620,7 @@ int main(int argc, char *argv[])
 
     printf(" > All done! Exiting now\n");
     return 0;
-}
+}    
 \end{minted}
 
 \subsection{Comandos de configuração}
