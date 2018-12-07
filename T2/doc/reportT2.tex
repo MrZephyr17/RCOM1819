@@ -4,20 +4,67 @@
 \usepackage[portuguese]{babel}
 \usepackage{minted}
 \usepackage{graphicx}
+\usepackage{vmargin}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{titling}
+\usepackage{natbib}
+\usepackage[hidelinks]{hyperref}
+
 \graphicspath{{./images/}}
 
-\title{Relatório RCOM T2}
-\author{João Miguel, Miguel Barraca, Pedro Fernandes}
+\setmarginsrb{3 cm}{2.5 cm}{3 cm}{2.5 cm}{1 cm}{1.5 cm}{1 cm}{1.5 cm}
+
+\title{T2 - Redes de Computadores}
+\author{MIEIC04\_G01}
 \date{Dezembro 2018}
 
-\renewcommand*\contentsname{Sumário}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\theauthor}
+\lhead{\thetitle}
+\cfoot{\thepage}
 
 \begin{document}
 
-\maketitle
+\begin{titlepage}
+	\centering
+    \vspace*{0.5 cm}
+    \includegraphics[scale = 0.75]{feup_logo.png}\\[1.0 cm]	% University Logo
+    \textsc{\LARGE Faculty of Engineering of the University of Porto}\\[2.0 cm]	% University Name
+	\textsc{\Large EIC0032}\\[0.5 cm]				% Course Code
+	\textsc{\large Redes de Computadores}\\[0.5 cm]				% Course Name
+	\rule{\linewidth}{0.2 mm} \\[0.4 cm]
+	{ \huge \bfseries \thetitle}\\ 
+	\rule{\linewidth}{0.2 mm} \\[1.5 cm]
+	
+	\begin{minipage}{0.4\textwidth}
+		\begin{flushleft} \large
+			\emph{Authors:}\\
+            João Miguel\\
+            Miguel Barraca\\
+            Pedro Fernandes
+        \end{flushleft}
+    \end{minipage}~
+    \begin{minipage}{0.4\textwidth}
+        \begin{flushright} \large
+            \emph{Student Numbers:} \\
+            up201604241@fe.up.pt
+            up201609149@fe.up.pt
+            up201603846@fe.up.pt
+            % Your Student Number
+		\end{flushright}
+\end{minipage}\\[2 cm]
+	
+{\large \thedate}\\[2 cm]
+ 
+\vfill
+	
+\end{titlepage}
 
 \tableofcontents
-
+\clearpage
+ 
 \section{Introdução}
 \section{Aplicação \textit{download}}
 \subsection{Arquitetura}
