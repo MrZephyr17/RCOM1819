@@ -8,7 +8,6 @@
 \usepackage{parskip}
 \usepackage{fancyhdr}
 \usepackage{titling}
-\usepackage{natbib}
 \usepackage[hidelinks]{hyperref}
 
 \graphicspath{{./images/}}
@@ -30,8 +29,8 @@
 \begin{titlepage}
 	\centering
     \vspace*{0.5 cm}
-    \includegraphics[scale = 0.75]{feup_logo.png}\\[1.0 cm]	% University Logo
-    \textsc{\LARGE Faculty of Engineering of the University of Porto}\\[2.0 cm]	% University Name
+    \includegraphics[scale = 0.5]{feup_logo.png}\\[1.0 cm]	% University Logo
+    \textsc{\LARGE Faculdade de Engenharia da Universidade do Porto}\\[2.0 cm]	% University Name
 	\textsc{\Large EIC0032}\\[0.5 cm]				% Course Code
 	\textsc{\large Redes de Computadores}\\[0.5 cm]				% Course Name
 	\rule{\linewidth}{0.2 mm} \\[0.4 cm]
@@ -40,7 +39,7 @@
 	
 	\begin{minipage}{0.4\textwidth}
 		\begin{flushleft} \large
-			\emph{Authors:}\\
+			\emph{Autores:}\\
             João Miguel\\
             Miguel Barraca\\
             Pedro Fernandes
@@ -48,7 +47,7 @@
     \end{minipage}~
     \begin{minipage}{0.4\textwidth}
         \begin{flushright} \large
-            \emph{Student Numbers:} \\
+            \emph{Números de estudante:} \\
             up201604241@fe.up.pt
             up201609149@fe.up.pt
             up201603846@fe.up.pt
@@ -66,9 +65,9 @@
 \clearpage
  
 \section{Introdução}
-No âmbito da Unidade Curricular Rede de Computadores (RCOM), foi-nos proposto o desenvolvimento de um projeto composto por duas partes: uma primeira que visou a criação de uma aplicação de download e uma segunda que teve como objetivo a configuração de uma rede.  
+No âmbito da Unidade Curricular Rede de Computadores (RCOM), foi-nos proposto o desenvolvimento de um projeto composto por duas partes: uma primeira que visou a criação de uma aplicação de \textit{download} e uma segunda que teve como objetivo a configuração de uma rede.  
 
-No que diz respeito à primeira parte do trabalho, procedemos ao desenvolvimento da aplicação em linguagem de programação C, capaz de fazer o download de ficheiros de um servidor FTP. Numa segunda fase, realizamos a configuração de uma rede e a análise de cada uma das experiências.  
+No que diz respeito à primeira parte do trabalho, procedemos ao desenvolvimento da aplicação em linguagem de programação C, capaz de fazer o \textit{download} de ficheiros de um servidor FTP. Numa segunda fase, realizamos a configuração de uma rede e a análise de cada uma das experiências.  
 
 Ao longo do presente relatório, pretendemos explicitar a base teórica que sustentou a elaboração deste projeto, levar a cabo uma análise do trabalho prático realizado e da aprendizagem que resultou da concretização do mesmo. 
 
@@ -126,8 +125,8 @@ E nas seguintes estruturas:
 
 Ao longo do programa são impressas mensagens para informar o utilizador do avanço do processo.
 \subsection{Exemplo de um \textit{download} com sucesso}
-Após efetuar todas as experiências, o programa foi corrido com o argumento
-ftp://ftp.up.pt/pub/sage/index.html.
+Após efetuar todas as experiências, o programa foi corrido 
+com o argumento \newline \textit{ftp://ftp.up.pt/pub/sage/index.html}.
 O resultado é o que se pode observar nas imagens:
 
 \begin{figure}[h]
@@ -145,7 +144,7 @@ O resultado é o que se pode observar nas imagens:
 \section{Configuração e análise de redes}
 \subsection{Experiência 1 - Configurar uma rede IP}
 
-A primeira experiência teve como objetivo ligar o tux 1 ao tux4, usando switch. 
+A primeira experiência teve como objetivo ligar o \textit{tux1} ao \textit{tux4}, usando um \textit{switch}. 
 
 \begin{enumerate}
 
@@ -153,23 +152,23 @@ A primeira experiência teve como objetivo ligar o tux 1 ao tux4, usando switch.
 
 Os dispositivos precisam de endereços MAC (endereços físicos) para comunicarem entre si dentro da LAN, pelo que cada interface tem associada ao seu endereço IP um endereço MAC.
 
-Quando um dispositivo (host ou router) pretende comunicar com outro dispositivo, apenas conhece o endereço IP com que quer comunicar, utilizando o protocolo ARP para obter o endereço MAC associado a este.
+Quando um dispositivo (\textit{host} ou \textit{router}) pretende comunicar com outro dispositivo, apenas conhece o endereço IP com que quer comunicar, utilizando o protocolo ARP para obter o endereço MAC associado a este.
 
-Neste protocolo são utilizados pacotes ARP (ARP request e ARP reply) para que um dispositivo obtenha o endereço MAC de outro dispositivo com quem pretende estabelecer uma comunicação. 
+Neste protocolo são utilizados pacotes ARP (ARP \textit{request} e ARP \textit{reply}) para que um dispositivo obtenha o endereço MAC de outro dispositivo com quem pretende estabelecer uma comunicação. 
 
-De cada vez que um dispositivo precisa obter o endereço MAC de outro dispositivo, envia um pacote de pedido (ARP request) a todos os dispositivos, indicando o seu próprio endereço MAC e o endereço IP do dispositivo com que pretende comunicar. Como resposta, o dispositivo com o endereço IP indicado no pedido envia para o primeiro um pacote de resposta (ARP reply) com o endereço MAC pedido, tornando-se possível a comunicação entre os dois dispositivos.
+De cada vez que um dispositivo precisa obter o endereço MAC de outro dispositivo, envia um pacote de pedido (ARP \textit{request}) a todos os dispositivos, indicando o seu próprio endereço MAC e o endereço IP do dispositivo com que pretende comunicar. Como resposta, o dispositivo com o endereço IP indicado no pedido envia para o primeiro um pacote de resposta (ARP \textit{reply}) com o endereço MAC pedido, tornando-se possível a comunicação entre os dois dispositivos.
 
 Cada dispositivo tem uma tabela ARP que guarda associações entre endereços IP e respetivos endereços MAC. Cada endereço MAC obtido por um dispositivo é guardado na sua tabela para possíveis comunicações futuras.
-Em resumo, o ARP (Address Resolution Protocol) e os pacotes ARP são utilizados para obter o endereço MAC (endereço físico/da camada de ligação) associado a um dado endereço IP (endereço IPv4 de uma interface) . 
+Em resumo, o ARP (\textit{Address Resolution Protocol}) e os pacotes ARP são utilizados para obter o endereço MAC (endereço físico/da camada de ligação) associado a um dado endereço IP (endereço IPv4 de uma interface). 
 
 
 \item O que são os endereços MAC e IP dos pacotes ARP e porquê?
 
-\textbf{O pacote ARP de pedido (APR request)} contém os endereços IP e MAC do dispositivo que faz o pedido, para que o recetor saiba qual o dispositivo que pretende obter resposta. Para além disso, contém o endereço IP do dispositivo com que se pretende estabelecer comunicação, para que este envie o seu endereço MAC como resposta. 
+\textbf{O pacote ARP de pedido (APR \textit{request})} contém os endereços IP e MAC do dispositivo que faz o pedido, para que o recetor saiba qual o dispositivo que pretende obter resposta. Para além disso, contém o endereço IP do dispositivo com que se pretende estabelecer comunicação, para que este envie o seu endereço MAC como resposta. 
 
-\textbf{O pacote ARP de resposta (APR reply)} transporta o endereço MAC solicitado até ao dispositivo que fez o pedido. 
+\textbf{O pacote ARP de resposta (APR \textit{reply})} transporta o endereço MAC solicitado até ao dispositivo que fez o pedido. 
 
-Quando se executa o comando ping do tux1 para o tux4, o tux1 tenta comunicar com o tux4. De acordo o protocolo descrito acima, o tux1 envia um pacote de pedido com os próprios endereços IP e MAC (172.16.10.1 e 00:21:5a:61:28:9c) e o endereço IP do tux4 (172.16.10.254), com quem pretende estabelecer conexão. Por sua vez, o tux4, reconhecendo que o pedido é para si, envia o pacote de resposta com o seu endereço MAC (00:22:64:a6:a4:f8) para o tux1.
+Quando se executa o comando \mintinline{bash}{ping} do \textit{tux1} para o \textit{tux4}, o \textit{tux1} tenta comunicar com o \textit{tux4}. De acordo o protocolo descrito acima, o \textit{tux1} envia um pacote de pedido com os próprios endereços IP e MAC (172.16.10.1 e 00:21:5a:61:28:9c) e o endereço IP do \textit{tux4} (172.16.10.254), com quem pretende estabelecer conexão. Por sua vez, o \textit{tux4}, reconhecendo que o pedido é para si, envia o pacote de resposta com o seu endereço MAC (00:22:64:a6:a4:f8) para o \textit{tux1}.
 
 
 \item Que pacotes gera o comando \mintinline{bash}{ping}?
@@ -178,87 +177,87 @@ O comando ping começa por gerar os pacotes APR (de pedido e resposta), como ref
 
 \item Quais são os endereços MAC e IP dos pacotes \mintinline{bash}{ping}?
 
-Sendo o comando ping executado do tux1 para o tux4, os endereços origem correspondem aos endereços do tux1 (IP = 172.16.10.1 e MAC = 00:21:5a:61:28:9c) e os endereços destino correspondem aos endereços IP e MAC do tux4 (IP = 172.16.10.254 e MAC = 00:22:64:a6:a4:f8).
+Sendo o comando \mintinline{bash}{ping} executado do \textit{tux1} para o \textit{tux4}, os endereços origem correspondem aos endereços do \textit{tux1} (IP = 172.16.10.1 e MAC = 00:21:5a:61:28:9c) e os endereços destino correspondem aos endereços IP e MAC do \textit{tux4} (IP = 172.16.10.254 e MAC = 00:22:64:a6:a4:f8).
 
 \item Como determinar se um quadro \textit{Ethernet} recebido é ARP, IP, ICMP?
 
-O tipo de trama recebido é especificado pelo valor do Ethernet header. O valor 0x800 indica que se trata de um IP e o valor 0x806 indica que se trata de um ARP.
-Se o valor Ethernet header for 0x0800,  o valor header do IP indica se o tipo de protocolo é ICMP (caso IP header seja igual a 1, caso contrário está a ser usado outro protocolo).
+O tipo de trama recebido é especificado pelo valor do \textit{Ethernet header}. O valor 0x800 indica que se trata de um IP e o valor 0x806 indica que se trata de um ARP.
+Se o valor \textit{Ethernet header} for 0x0800, o valor \textit{header} do IP indica se o tipo de protocolo é ICMP (caso IP \textit{header} seja igual a 1, caso contrário está a ser usado outro protocolo).
 
 \item Como determinar o tamanho de um quadro recebido?
 
-O tamanho de uma frame pode ser verificado no wireshark.
+O tamanho de uma frame pode ser verificado no \textit{wireshark}.
 
 \item Qual é a interface \textit{loopback} e porque é importante?
 
-É uma interface de rede virtual (endereço IP 127.0.0.1) que permite a um host ou router comunicar consigo mesmo. Trata-se de uma interface com várias utilidades, entre as quais testar se a conectividade do router ou host está a funcionar corretamente (ou diagnosticar problemas).
+É uma interface de rede virtual (endereço IP 127.0.0.1) que permite a um \textit{host} ou \textit{router} comunicar consigo mesmo. Trata-se de uma interface com várias utilidades, entre as quais testar se a conectividade do \textit{router} ou \textit{host} está a funcionar corretamente (ou diagnosticar problemas).
 \end{enumerate}
 \subsection{Experiência 2 - Implementar duas VLANs num \textit{switch}}
 
-Na segunda experiência, começamos por criar duas LAN’s virtuais: VLAN10 e VLAN11. Posteriormente, associamos os tux1 e 4 à VLAN10 e associamos o tux2 à VLAN11.
+Na segunda experiência, começamos por criar duas LAN’s virtuais: VLAN10 e VLAN11. Posteriormente, associamos os \textit{tux1} e 4 à VLAN10 e associamos o \textit{tux2} à VLAN11.
 
 \begin{enumerate}
 \item Como configurar a \textit{vlan10}?
 
 1) Criar uma VLAN com valor 0, usando os seguintes comandos no GTKTerm:
 \begin{itemize}
-    \item configure terminal
-    \item vlan y0
-    \item end
+    \item \mintinline{bash}{configure terminal}
+    \item \mintinline{bash}{vlan y0}
+    \item \mintinline{bash}{end}
 \end{itemize}
-2) Adicionar à VLAN criada as portas .1 e .254, que correspondem às portas do tux1 e do tux4, respetivamente. Assim, estes tux são ligados à VLAN0, criando-se uma sub-rede. Para tal utilizam-se os comandos:
+2) Adicionar à VLAN criada as portas .1 e .254, que correspondem às portas do \textit{tux1} e do \textit{tux4}, respetivamente. Assim, estes \textit{tux} são ligados à VLAN0, criando-se uma sub-rede. Para tal utilizam-se os comandos:
 \begin{itemize}
-    \item configure terminal
-    \item interface fastethernet 0/1  (interface fastethernet 0/254)
-    \item switchport mode access
-    \item switchport access vlan y0
-    \item end
+    \item \mintinline{bash}{configure terminal}
+    \item \mintinline{bash}{interface fastethernet 0/1}  (interface fastethernet 0/254)
+    \item \mintinline{bash}{switchport mode access}
+    \item \mintinline{bash}{switchport access vlan y0}
+    \item \mintinline{bash}{end}
 \end{itemize}
 
 \item Quantos domínios de transmissão existem? Como se pode concluir a partir dos registos?
 
-Apesar de se executar ping do tux1 para o tux4, ping do tux1 para o tux2, e ping a partir do tux2, apenas existem 2 domínios de transmissão.  O tux1 obtém resposta do tux4, mas não obtém resposta do tux2, assim como o tux2 não obtém resposta de qualquer outro tux (ver figuras 2 e 3). 
+Apesar de se executar ping do \textit{tux1} para o \textit{tux4}, ping do \textit{tux1} para o \textit{tux2}, e \mintinline{bash}{ping} a partir do \textit{tux2}, apenas existem 2 domínios de transmissão. O \textit{tux1} obtém resposta do \textit{tux4}, mas não obtém resposta do \textit{tux2}, assim como o \textit{tux2} não obtém resposta de qualquer outro \textit{tux} (ver figuras 2 e 3). 
 
-Tal se justifica pelo facto de ainda não existir nenhuma ligação física entre o tux2 e os restantes tux1 e tux4, visto que o tux2 se encontra numa sub-rede diferente da sub-rede dos restantes e vlan1 e vlan0 não têm qualquer ligação.
+Tal se justifica pelo facto de ainda não existir nenhuma ligação física entre o \textit{tux2} e os restantes \textit{tux1} e \textit{tux4}, visto que o \textit{tux2} se encontra numa sub-rede diferente da sub-rede dos restantes e vlan1 e vlan0 não têm qualquer ligação.
 
 \end{enumerate}
 \subsection{Experiência 3 - Configurar um \textit{router} em Linux}
-A terceira experiência teve como propósito a configuração do tux4 como um router, permitindo o estabelecimento de ligação entre os tux1 e tux2, ao estabelecer uma ligação entre a VLAN01 e a VLAN11.
+A terceira experiência teve como propósito a configuração do \textit{tux4} como um \textit{router}, permitindo o estabelecimento de ligação entre os \textit{tux1} e \textit{tux2}, ao estabelecer uma ligação entre a VLAN01 e a VLAN11.
 \begin{enumerate}
 \item Que rotas existem nos \textit{tuxes}? Qual o seu significado?
 
-O tux1 tem uma rota para a VLAN0  (172.16.y0.0) através da gateway 172.16.y0.1 e o tux2 tem uma rota para a VLAN1 (172.16.y1.0) através da gateway 172.16.y1.1 . Estes tuxes, juntamente com as suas rotas, representam sub-redes diferentes. Assim, o tux1 e o tux2 apenas poderão comunicar com o auxílio de um router.
+O \textit{tux1} tem uma rota para a VLAN0 (172.16.y0.0) através da \textit{gateway} 172.16.y0.1 e o \textit{tux2} tem uma rota para a VLAN1 (172.16.y1.0) através da \textit{gateway} 172.16.y1.1. Estes \textit{tuxes}, juntamente com as suas rotas, representam sub-redes diferentes. Assim, o \textit{tux1} e o \textit{tux2} apenas poderão comunicar com o auxílio de um router.
 
-O tux4 tem duas rotas, uma para a VLAN0 pela gateway 172.16.y0.254 e outra para a VLAN1 através da gateway 172.16.y1.253 . O tux4, usando estas rotas, simula um router que estabelece comunicação entre as duas sub-redes do parágrafo anterior, uma vez que estabelece comunicação entre as VLAN0 e VLAN1, permitindo, desta maneira, que o tux1 comunique com o tux2.
+O \textit{tux4} tem duas rotas, uma para a VLAN0 pela \textit{gateway} 172.16.y0.254 e outra para a VLAN1 através da \textit{gateway} 172.16.y1.253. O \textit{tux4}, usando estas rotas, simula um router que estabelece comunicação entre as duas sub-redes do parágrafo anterior, uma vez que estabelece comunicação entre as VLAN0 e VLAN1, permitindo, desta maneira, que o \textit{tux1} comunique com o \textit{tux2}.
 
 
 \item Que informação contém uma entrada da tabela de encaminhamento?
 
 \begin{itemize}
-    \item Destination: destino da rota
-    \item Gateway: IP da interface seguinte
-    \item Interface: eth0/etho1
+    \item \textit{Destination}: destino da rota
+    \item \textit{Gateway}: IP da interface seguinte
+    \item \textit{Interface}: eth0/etho1
 \end{itemize}
 
 
 \item Que mensagens ARP e endereços MAC associados são observados, e porquê?
 
-Quando se executa ping do tux1 para o tux2, o tux1 tenta comunicar com o tux2 (comunicação possibilitada agora pelo tux4, que simula o router). Para tal, o tux1 começa por tentar comunicar com o tux4, intermediário, que, por sua vez, permite que este comunique com o tux2.
+Quando se executa \mintinline{bash}{ping} do \textit{tux1} para o \textit{tux2}, o \textit{tux1} tenta comunicar com o \textit{tux2} (comunicação possibilitada agora pelo \textit{tux4}, que simula o router). Para tal, o \textit{tux1} começa por tentar comunicar com o \textit{tux4}, intermediário, que, por sua vez, permite que este comunique com o \textit{tux2}.
 
-Primeiramente, o tux1 começa por enviar um pacote de pedido APR com os seus endereços IP e MAC (172.16.10.1 e 00:21:5a:61:28:9c) e o endereço IP do tux4 (172.16.10.254). O tux4 envia de volta um pacote de resposta com o seu endereço MAC (00:22:64:a6:a4:f8) para o tux1, estabelecendo-se a comunicação entre estes.
+Primeiramente, o \textit{tux1} começa por enviar um pacote de pedido APR com os seus endereços IP e MAC (172.16.10.1 e 00:21:5a:61:28:9c) e o endereço IP do \textit{tux4} (172.16.10.254). O \textit{tux4} envia de volta um pacote de resposta com o seu endereço MAC (00:22:64:a6:a4:f8) para o \textit{tux1}, estabelecendo-se a comunicação entre estes.
 
-Estando agora o tux1 ligado ao tux4, pode enviar um pedido APR com os seus endereços e o endereço IP  172.16.11.253 (rota de ligação do tux4 com a vlan1), obtendo o endereço MAC associado ao último.
+Estando agora o \textit{tux1} ligado ao \textit{tux4}, pode enviar um pedido APR com os seus endereços e o endereço IP  172.16.11.253 (rota de ligação do \textit{tux4} com a vlan1), obtendo o endereço MAC associado ao último.
 
-Por último, o tux1 envia finalmente o pedido com os seus endereços e o endereço do tux2 (172.16.11.1). O tux2 envia o seu endereço MAC para o tux1, estabelecendo-se a ligação entre o tux1 e o tux2.
+Por último, o \textit{tux1} envia finalmente o pedido com os seus endereços e o endereço do \textit{tux2} (172.16.11.1). O \textit{tux2} envia o seu endereço MAC para o \textit{tux1}, estabelecendo-se a ligação entre o \textit{tux1} e o \textit{tux2}.
 
 
 \item Que pacotes ICMP são observados e porquê?
 
-São observados tanto pacotes de pedidos como de resposta, visto que nesta experiência, ao contrário da anterior, todos os tuxes podem comunicar entre si.
+São observados tanto pacotes de pedidos como de resposta, visto que nesta experiência, ao contrário da anterior, todos os \textit{tuxes} podem comunicar entre si.
 
 \item Quais são os endereços IP e MAC associados aos pacotes ICMP e porquê?
 
-Os endereços associados são os endereços IP e MAC do tux origem e os endereços IP e MAC do tux destino.
+Os endereços associados são os endereços IP e MAC do \textit{tux} origem e os endereços IP e MAC do \textit{tux} destino.
 \end{enumerate}
 \subsection{Experiência 4 - Configurar um \textit{router} comercial e implementar NAT}
 \begin{enumerate}
@@ -294,7 +293,12 @@ a taxa de transferência da conexão de dados evoluiu ao longo do tempo? Está d
 \end{enumerate}
 \section{Conclusão}
 Consideramos que, com o desenvolvimento deste projeto, fomos capazes de cumprir, com sucesso, os objetivos inicialmente propostos.  Acrescentamos ainda que este trabalho permitiu a exploração e assimilação de uma série de conceitos, fundamentais para o conhecimento e domínio das redes de computadores.  
-\section{Referências}
+
+\begin{thebibliography}{1}
+    \bibitem{rfc959} 
+    File Transfer Protocol Standard,
+    \\\texttt{https://tools.ietf.org/html/rfc959}
+\end{thebibliography}
 \section{Anexos}
 \subsection{Código da aplicação \textit{download}}
 \textbf{download.h}
@@ -841,39 +845,33 @@ route add default gw $ip3
 \subsection{\textit{Logs} registados}
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.6]{images/exp1.PNG}
+    \includegraphics[scale=0.5]{images/exp1.PNG}
     \caption{Experiência 1 (ping do tux1 para tux4)}
-    \label{fig:my_label}
 \end{figure}
-\begin{figure}
+\begin{figure}[H]
     \centering
-    \includegraphics[scale=0.6]{images/exp2_1_4.PNG}
+    \includegraphics[scale=0.5]{images/exp2_1_4.PNG}
     \caption{Experiência 2 (ping do tux1 para o tux4)}
-    \label{fig:my_label}
 \end{figure}
-\begin{figure}
+\begin{figure}[H]
     \centering
-    \includegraphics[scale=0.6]{images/exp2_1_2.PNG}
+    \includegraphics[scale=0.5]{images/exp2_1_2.PNG}
     \caption{Experiência 2 (ping do tux1 para o tux2)}
-    \label{fig:my_label}
 \end{figure}
-\begin{figure}
+\begin{figure}[H]
     \centering
-    \includegraphics[scale=0.6]{images/exp3_part1.PNG}
+    \includegraphics[scale=0.5]{images/exp3_part1.PNG}
     \caption{Experiência 3 (ping do tux1 para o tux2, part1)}
-    \label{fig:my_label}
 \end{figure}
-\begin{figure}
+\begin{figure}[H]
     \centering
-    \includegraphics[scale=0.6]{images/exp3_part2.PNG}
+    \includegraphics[scale=0.5]{images/exp3_part2.PNG}
     \caption{Experiência 3 (ping do tux1 para o tux2, part2)}
-    \label{fig:my_label}
 \end{figure}
-\begin{figure}
+\begin{figure}[H]
     \centering
-    \includegraphics[scale=0.6]{images/exp3_part3.PNG}
+    \includegraphics[scale=0.5]{images/exp3_part3.PNG}
     \caption{Experiência 3 (ping do tux1 para o tux2, part3)}
-    \label{fig:my_label}
 \end{figure}
 
 \end{document}
