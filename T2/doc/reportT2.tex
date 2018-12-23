@@ -263,33 +263,102 @@ Os endereços associados são os endereços IP e MAC do \textit{tux} origem e os
 \begin{enumerate}
 \item Como configurar uma rota estática num \textit{router} comercial?
 
+Para fazer uma configuração de uma rota estática num router comercial são necessárias as seguintes ligações:
+\begin{itemize}
+    \item Ligar porta T4 á porta do Router
+    \item Ligar porta T3 á porta S0 do Tux, que deve estar ligado ao router.
+\end{itemize}
+Quanto à criação da VLAN, invocam-se os seguintes comandos no GTKTerm do TUX escolhido:
+\begin{itemize}
+    \item Configure Terminal
+    \item ip route[IP da dora de destinp] [Máscara] [IP gateway]
+    \item exit
+\end{itemize}
+
+
 \item Quais são os caminhos seguidos pelos pacotes nas experiências feitas e porquê?
 
+Nas experiencias, os pacotes seguem ou rotas existentes, ou a rota default.
+Se uma rota ja existir definida, os pacptes seguem essa mesma, em caso contrário, os pacotes vão ate ao router, este dá o sinal de que o TUx 4 existe e que devem ser enviados através do mesmo.
+
 \item Como configurar NAT num \textit{router} comercial?
+A configuração do NAT foi deita seguindo o guião da experiencia 4, através do GTKTerm, apresentados em seguida:
+\begin{itemize}
+    \item  conf t
+    \item  interface gigabitethernet 0/0 *
+    \item  ip address 172.16.y1.254 255.255.255.0
+    \item  no shutdown
+    \item  ip nat inside
+    \item  exit
+    \item  interface gigabitethernet 0/1*
+    \item  ip address 172.16.1.y9 255.255.255.0
+    \item  no shutdown
+    \item  ip nat outside
+    \item  exit
+    \item  ip nat pool ovrld 172.16.1.y9 172.16.1.y9 prefix 24
+    \item  ip nat inside source list 1 pool ovrld overload
+    \item  access-list 1 permit 172.16.y0.0 0.0.0.7
+    \item  access-list 1 permit 172.16.y1.0 0.0.0.7
+    \item  ip route 0.0.0.0 0.0.0.0 172.16.1.254
+    \item  ip route 172.16.y0.0 255.255.255.0 172.16.y1.253
+    \item  endt
+\end{itemize}
+
 
 \item O que faz NAT?
+
+O NAT(Network Adress Translation) permite que os computadores de ima rede interna, como a que foi criada no desenvolvimento deste projetp, possa ter acesso á rede exterior, sendo que fora da sua rede, possa ser reconhecida através de um IP único, representante de todos os dispositivos que contem.
+Isto é possivel porque o NAT opera num router que conecta duas redes. Faz depois a tradução dos IP's privados para IP's legais e permite o encaminhamento de pacotes para a rede exterior.
+Funciona ainda como medida de segurança e é implementado com frequencia em ambientes de acesso remoto.
+
 \end{enumerate}
 \subsection{Experiência 5 - DNS}
 \begin{enumerate}
 \item Como configurar o servico DNS num anfitrião?
+O serviço de DNS é configurado no ficheiro localizado em vi/etc/resolv.conf no anfitrião tux desejado.
+A configuração é feita através dois comandos que serão apresentados em seguida. Estes comandos representam o nome do servidor DNS e o respetivo endereço IP. Depois de executados permitem a conexão á internet.
+\begin{itemize}
+    \item search netlab.fe.up.pt
+    \item nameserver 172.16.1.1
+\end{itemize}
 
 \item Que pacotes são trocados por DNS e que informação é transportada?
+O host envia para o Server um pacote com o hostname em questão, esperando que seja retornado o seu endereço de IP.
+O servidor responde em seguida com um pacote contendo o endereço IP do hostname em questão.
+
 \end{enumerate}
 \subsection{Experiência 6 - Conexões TCP}
 \begin{enumerate}
 \item Quantas conexões TCP são abertas pela aplicação FTP?
+São abertas 2 conexões. A primeira, para enviar os comandos FTP ao servidor e receber a respetiva resposta.
+A segunda para a rexepção de dados enviados pelo Server e respetiva resposta do cliente.
 
 \item Em que conexão é transportada a informação de controlo FTP?
-
+Na conexão TCP responsável pela troca de comandos.
 \item Quais são as fases de uma conexão FTP?
+Uma conexão FTP tem as 3 seguntes fases:
+\begin{itemize}
+    \item Estabelecimento da conexão
+    \item Troca de dados
+    \item Encerramento da conexão
+\end{itemize}
+
 
 \item Como funciona o mecanismo ARQ TCP? Quais são os campos TCP relevantes? Que informação relevante pode ser observada nos
 registos?
 
+O mecanismo ARQ TCP funciona com o método da janela deslizante, ou seja, com o controlo de erros na transmissão de dados. 
+Este controlo de erros é feito através de \textit{acknowledgment numbers}, enviados pelo recetor e que indicam se a trama foi recebida corretamente, \textit{window size} indicando a gama dos pacotes recebidos e o numero do pacote a ser enviado, o \textit{sequence number}.
+
 \item Como funciona o mecanismo de congestionamento de controlo TCP? Quais são os campos relevantes? Como é que
 a taxa de transferência da conexão de dados evoluiu ao longo do tempo? Está de acordo com o mecanismo de congestionamento de controlo TCP?
 
+O TCP contêm uma janela de congestão. Isto é, uma estimativa do numero de octetos que a rede consegue encaminhar, não enviando assim mais ocetetos que o minimo da janela definida.
+O fluxo de dados de conexão do nosso projeto está de acordo com o mecanismo de controlo de congestão, uma vez que sempre que o congestionamento de rede aumentava, o bitrate diminuia.
+
 \item A taxa de transferência de uma conexão de dados TCP é perturbada pelo aparecimento de uma segunda conexão TCP? Como?
+Sim. O aparecimento de uma segunda conexão TCP pode levar a uma queda na taxa de transmissão. Esta, é distribuida de forma igual para cada ligação e por isso é logico que com o aparecimento de uma nova conexão, a taxa de transferência seja reduzida.
+
 \end{enumerate}
 \section{Conclusão}
 Consideramos que, com o desenvolvimento deste projeto, fomos capazes de cumprir, com sucesso, os objetivos inicialmente propostos.  Acrescentamos ainda que este trabalho permitiu a exploração e assimilação de uma série de conceitos, fundamentais para o conhecimento e domínio das redes de computadores.  
