@@ -27,3 +27,7 @@ on RCOM lab.
 ```bash
 gcc -o download download.c -Wall -Wextra
 ```
+
+## Authors
+
+Done in collaboration with [João Miguel](https://github.com/JoaoMiguel98) and [Miguel Barraca](https://github.com/redbaron97).
